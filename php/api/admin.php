@@ -76,6 +76,47 @@ if ($method === 'GET') {
             jsonError('Utilisateur non trouvé ou impossible de supprimer un admin', 404);
         }
         
+    } elseif ($action === 'delete-draw') {
+        // Supprimer un tirage pour permettre de le relancer
+        $input = getJsonInput();
+        $year = $input['year'] ?? date('Y');
+        
+        $pdo = getDBConnection();
+        
+        try {
+            $pdo->beginTransaction();
+            
+            // Récupérer l'ID du tirage
+            $stmt = $pdo->prepare("SELECT id FROM draws WHERE year = ?");
+            $stmt->execute([$year]);
+            $draw = $stmt->fetch();
+            
+            if (!$draw) {
+                $pdo->rollBack();
+                jsonError("Aucun tirage trouvé pour l'année $year", 404);
+            }
+            
+            // Supprimer les attributions liées
+            $stmt = $pdo->prepare("DELETE FROM assignments WHERE draw_id = ?");
+            $stmt->execute([$draw['id']]);
+            
+            // Supprimer le tirage
+            $stmt = $pdo->prepare("DELETE FROM draws WHERE id = ?");
+            $stmt->execute([$draw['id']]);
+            
+            $pdo->commit();
+            
+            jsonResponse([
+                'message' => "Tirage de l'année $year supprimé avec succès",
+                'year' => $year
+            ]);
+            
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            error_log("Delete draw error: " . $e->getMessage());
+            jsonError('Erreur lors de la suppression du tirage', 500);
+        }
+        
     } elseif ($action === 'create-draw') {
         // Créer un tirage au sort
         $input = getJsonInput();
@@ -87,7 +128,7 @@ if ($method === 'GET') {
         $stmt = $pdo->prepare("SELECT id FROM draws WHERE year = ?");
         $stmt->execute([$year]);
         if ($stmt->fetch()) {
-            jsonError("Un tirage existe déjà pour l'année $year");
+            jsonError("Un tirage existe déjà pour l'année $year. Supprimez-le d'abord si vous voulez le relancer.");
         }
         
         // Obtenir tous les utilisateurs approuvés
