@@ -54,12 +54,24 @@ function updateUI() {
     
     // Bouton tirage
     const drawBtn = document.getElementById('createDrawBtn');
+    const resetDrawBtn = document.getElementById('resetDrawBtn');
     const drawWarning = document.getElementById('drawWarning');
+    const drawInfo = document.getElementById('drawInfo');
+    
     if (approvedUsers.length < 2) {
         drawBtn.disabled = true;
         drawWarning.classList.remove('hidden');
     } else {
         drawWarning.classList.add('hidden');
+    }
+    
+    // Afficher le bouton de réinitialisation si un tirage existe
+    if (drawStatus.has_draw) {
+        resetDrawBtn.style.display = 'inline-block';
+        drawInfo.classList.remove('hidden');
+    } else {
+        resetDrawBtn.style.display = 'none';
+        drawInfo.classList.add('hidden');
     }
     
     // Liste des utilisateurs en attente
