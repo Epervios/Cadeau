@@ -100,15 +100,18 @@ class SecretSantaAPITester:
 
     def test_user_login_before_approval(self):
         """Test user login before admin approval (should fail or show pending)"""
-        timestamp = datetime.now().strftime('%H%M%S')
+        if not self.test_user_email or not self.test_user_password:
+            print("❌ No test user credentials available")
+            return False
+            
         success, response = self.run_test(
             "User Login Before Approval",
             "POST",
             "auth/login",
             200,  # Login succeeds but user is not approved
             data={
-                "email": f"test{timestamp}@example.com",
-                "password": "TestPass123!"
+                "email": self.test_user_email,
+                "password": self.test_user_password
             }
         )
         if success:
