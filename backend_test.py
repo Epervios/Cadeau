@@ -9,6 +9,8 @@ class SecretSantaAPITester:
         self.admin_token = None
         self.user_token = None
         self.test_user_id = None
+        self.test_user_email = None
+        self.test_user_password = None
         self.tests_run = 0
         self.tests_passed = 0
 
