@@ -106,6 +106,30 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteDraw = async () => {
+    const year = new Date().getFullYear();
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.delete(
+        `${API}/admin/draw`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success("Tirage réinitialisé!", {
+        description: "Vous pouvez maintenant relancer un nouveau tirage.",
+      });
+      fetchData();
+    } catch (error) {
+      toast.error("Erreur de réinitialisation", {
+        description: error.response?.data?.detail || "Impossible de supprimer le tirage",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const approvedUsers = allUsers.filter((u) => u.is_approved);
 
   return (
