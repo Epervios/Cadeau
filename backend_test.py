@@ -78,6 +78,8 @@ class SecretSantaAPITester:
     def test_user_registration(self):
         """Test user registration"""
         timestamp = datetime.now().strftime('%H%M%S')
+        self.test_user_email = f"test{timestamp}@example.com"
+        self.test_user_password = "TestPass123!"
         success, response = self.run_test(
             "User Registration",
             "POST",
@@ -85,13 +87,14 @@ class SecretSantaAPITester:
             200,
             data={
                 "first_name": f"TestUser{timestamp}",
-                "email": f"test{timestamp}@example.com",
-                "password": "TestPass123!"
+                "email": self.test_user_email,
+                "password": self.test_user_password
             }
         )
         if success and 'user_id' in response:
             self.test_user_id = response['user_id']
             print(f"   Test user ID: {self.test_user_id}")
+            print(f"   Test user email: {self.test_user_email}")
             return True
         return False
 
