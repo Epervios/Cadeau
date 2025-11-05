@@ -158,7 +158,7 @@ async function rejectUser(userId) {
 
 // Créer un tirage
 async function createDraw() {
-    if (!confirm('Voulez-vous lancer le tirage au sort? Cette action ne peut pas être annulée.')) return;
+    if (!confirm('Voulez-vous lancer le tirage au sort? Chaque participant recevra secrètement un nom.')) return;
     
     try {
         const response = await fetch(`${API_BASE}/admin.php?action=create-draw`, {
@@ -177,6 +177,40 @@ async function createDraw() {
         }
     } catch (error) {
         console.error('Draw error:', error);
+        showToast('Erreur de connexion', 'error');
+    }
+}
+
+// Réinitialiser un tirage
+async function resetDraw() {
+    const year = new Date().getFullYear();
+    
+    if (!confirm(`⚠️ ATTENTION!\n\nVoulez-vous vraiment SUPPRIMER le tirage de ${year}?\n\nToutes les attributions seront perdues et vous devrez relancer un nouveau tirage.\n\nCette action est irréversible!`)) {
+        return;
+    }
+    
+    // Double confirmation pour sécurité
+    if (!confirm('Êtes-vous absolument sûr? Tapez OK pour confirmer.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin.php?action=delete-draw`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ year: year })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast('Tirage réinitialisé! Vous pouvez maintenant relancer un nouveau tirage.', 'success');
+            loadData();
+        } else {
+            showToast(data.error || 'Erreur lors de la réinitialisation', 'error');
+        }
+    } catch (error) {
+        console.error('Reset draw error:', error);
         showToast('Erreur de connexion', 'error');
     }
 }
