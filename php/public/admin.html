@@ -45,8 +45,12 @@
                 <p>Lancez le tirage pour l'année en cours. Chaque participant sera assigné secrètement.</p>
             </div>
             <div class="card-body">
-                <button id="createDrawBtn" onclick="createDraw()" class="btn btn-success">Lancer le tirage</button>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button id="createDrawBtn" onclick="createDraw()" class="btn btn-success">Lancer le tirage</button>
+                    <button id="resetDrawBtn" onclick="resetDraw()" class="btn btn-danger" style="display: none;">🔄 Réinitialiser le tirage</button>
+                </div>
                 <p id="drawWarning" class="warning hidden">⚠️ Minimum 2 participants approuvés requis</p>
+                <p id="drawInfo" class="info-text hidden" style="margin-top: 1rem; color: #059669;">ℹ️ Si le tirage s'est mal passé, vous pouvez le réinitialiser et le relancer.</p>
             </div>
         </div>
 
