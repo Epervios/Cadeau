@@ -580,6 +580,16 @@ body {
     margin-top: 0.5rem;
 }
 
+.info-text {
+    color: #059669;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
 /* Toast Message */
 .message-toast {
     position: fixed;
