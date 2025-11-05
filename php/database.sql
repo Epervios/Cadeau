@@ -1,8 +1,8 @@
 -- Secret Santa Database Schema
 -- Pour hébergement mutualisé PHP/MySQL
 
-CREATE DATABASE IF NOT EXISTS secret_santa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE secret_santa;
+CREATE DATABASE IF NOT EXISTS cadeau CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE cadeau;
 
 -- Table des utilisateurs
 CREATE TABLE IF NOT EXISTS users (
