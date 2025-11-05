@@ -3,9 +3,9 @@
 // Modifiez ces valeurs selon votre hébergeur
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'secret_santa');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'cadeau');
+define('DB_USER', 'cadeau_admin');
+define('DB_PASS', 'DSxl^yiwe9P8wu8$');
 define('DB_CHARSET', 'utf8mb4');
 
 // Connexion à la base de données
