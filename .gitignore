@@ -81,3 +81,11 @@ android-sdk/ -e
 # Environment files
 *.env
 *.env.*
+
+# Secret Santa - Fichiers sensibles PHP
+php/config/database.php
+php/generate_admin_password.php
+php/test_connection.php
+
+# Test reports Secret Santa
+test_reports/
