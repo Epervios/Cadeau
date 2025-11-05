@@ -218,39 +218,85 @@ const AdminDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  disabled={drawStatus.has_draw || approvedUsers.length < 2 || loading}
-                  data-testid="create-draw-button"
-                >
-                  {loading ? "Tirage en cours..." : drawStatus.has_draw ? "Tirage déjà effectué" : "Lancer le tirage"}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmer le tirage au sort?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Vous allez lancer le tirage pour {approvedUsers.length} participants.
-                    Cette action ne peut pas être annulée pour l'année en cours.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleCreateDraw}
-                    className="bg-green-600 hover:bg-green-700"
-                    data-testid="confirm-draw-button"
+            <div className="flex gap-3 flex-wrap">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    disabled={drawStatus.has_draw || approvedUsers.length < 2 || loading}
+                    data-testid="create-draw-button"
                   >
-                    Confirmer
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    {loading ? "Tirage en cours..." : drawStatus.has_draw ? "Tirage déjà effectué" : "Lancer le tirage"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmer le tirage au sort?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Vous allez lancer le tirage pour {approvedUsers.length} participants.
+                      Chaque participant recevra secrètement un nom.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCreateDraw}
+                      className="bg-green-600 hover:bg-green-700"
+                      data-testid="confirm-draw-button"
+                    >
+                      Confirmer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              {drawStatus.has_draw && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      disabled={loading}
+                      data-testid="reset-draw-button"
+                    >
+                      🔄 Réinitialiser le tirage
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>⚠️ Attention!</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Voulez-vous vraiment SUPPRIMER le tirage de {drawStatus.year}?
+                        <br /><br />
+                        <strong>Toutes les attributions seront perdues</strong> et vous devrez relancer un nouveau tirage.
+                        <br /><br />
+                        Cette action est irréversible!
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteDraw}
+                        className="bg-red-600 hover:bg-red-700"
+                        data-testid="confirm-reset-button"
+                      >
+                        Oui, supprimer le tirage
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+            
             {approvedUsers.length < 2 && (
               <p className="text-sm text-amber-600 mt-2">
                 ⚠️ Minimum 2 participants approuvés requis
+              </p>
+            )}
+            
+            {drawStatus.has_draw && (
+              <p className="text-sm text-green-600 mt-2">
+                ℹ️ Si le tirage s'est mal passé, vous pouvez le réinitialiser et le relancer.
               </p>
             )}
           </CardContent>
