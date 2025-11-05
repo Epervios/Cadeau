@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Santa - Mon Attribution</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="snowflakes" id="snowflakes"></div>
+    
+    <div class="user-header">
+        <div class="user-header-content">
+            <div class="user-title">
+                <span class="gift-icon">🎁</span>
+                <div>
+                    <h1 id="pageTitle">Secret Santa 2025</h1>
+                    <p id="userWelcome">Bonjour!</p>
+                </div>
+            </div>
+            <button onclick="logout()" class="btn btn-outline">Déconnexion</button>
+        </div>
+    </div>
+
+    <div class="container user-container">
+        <div id="loadingSpinner" class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Carte avec attribution -->
+        <div id="assignmentCard" class="assignment-card hidden">
+            <div class="assignment-header">
+                <div class="gift-icon-large">🎁</div>
+                <h2>Votre attribution Secret Santa</h2>
+                <p>Année <span id="assignmentYear">2025</span></p>
+            </div>
+            <div class="assignment-body">
+                <p class="assignment-label">Vous devez offrir un cadeau à :</p>
+                <div class="assignment-name-box">
+                    <p id="assignmentName" class="assignment-name">...</p>
+                </div>
+            </div>
+            <div class="assignment-reminders">
+                <h3>✨ Rappels importants :</h3>
+                <ul>
+                    <li>Gardez cette attribution secrète! 🤫</li>
+                    <li>Préparez un cadeau attentionné 🎁</li>
+                    <li>Profitez de la magie de Noël ✨</li>
+                    <li>Joyeuses fêtes à toute la famille! 🎄</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Carte sans tirage -->
+        <div id="noDrawCard" class="no-draw-card hidden">
+            <div class="no-draw-icon">🎁</div>
+            <h2>Pas encore de tirage</h2>
+            <p>Le tirage au sort pour l'année <span id="noDrawYear">2025</span> n'a pas encore été effectué.</p>
+            <p class="no-draw-text">L'administrateur lancera bientôt le tirage. Revenez plus tard!</p>
+            <div class="no-draw-badge">En attente du tirage</div>
+        </div>
+
+        <div class="christmas-decorations">
+            🎄 ⛄ 🎅 🎁 ✨
+        </div>
+    </div>
+
+    <script src="js/user.js"></script>
+</body>
+</html>

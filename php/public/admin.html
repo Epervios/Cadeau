@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Santa - Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-header">
+        <div class="admin-header-content">
+            <div class="admin-title">
+                <span class="gift-icon">🎁</span>
+                <div>
+                    <h1>Admin Dashboard</h1>
+                    <p id="adminWelcome">Bienvenue</p>
+                </div>
+            </div>
+            <button onclick="logout()" class="btn btn-outline">Déconnexion</button>
+        </div>
+    </div>
+
+    <div class="container admin-container">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Participants approuvés</h3>
+                <p class="stat-number" id="approvedCount">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>En attente</h3>
+                <p class="stat-number" id="pendingCount">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Année <span id="currentYear">2025</span></h3>
+                <p class="stat-badge" id="drawStatus">Pas de tirage</p>
+            </div>
+        </div>
+
+        <!-- Section Tirage -->
+        <div class="card">
+            <div class="card-header">
+                <h2>✨ Tirage au sort Secret Santa</h2>
+                <p>Lancez le tirage pour l'année en cours. Chaque participant sera assigné secrètement.</p>
+            </div>
+            <div class="card-body">
+                <button id="createDrawBtn" onclick="createDraw()" class="btn btn-success">Lancer le tirage</button>
+                <p id="drawWarning" class="warning hidden">⚠️ Minimum 2 participants approuvés requis</p>
+            </div>
+        </div>
+
+        <!-- Utilisateurs en attente -->
+        <div id="pendingSection" class="card hidden">
+            <div class="card-header">
+                <h2>Demandes en attente</h2>
+                <p>Approuvez ou rejetez les nouvelles inscriptions</p>
+            </div>
+            <div id="pendingList" class="user-list"></div>
+        </div>
+
+        <!-- Tous les utilisateurs -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Tous les utilisateurs (<span id="totalUsers">0</span>)</h2>
+            </div>
+            <div id="userList" class="user-list"></div>
+        </div>
+    </div>
+
+    <div id="message" class="message-toast hidden"></div>
+    <script src="js/admin.js"></script>
+</body>
+</html>
