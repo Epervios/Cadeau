@@ -89,3 +89,7 @@ php/test_connection.php
 
 # Test reports Secret Santa
 test_reports/
+-e 
+# Environment files
+*.env
+*.env.*
