@@ -206,6 +206,26 @@ async def reject_user(user_id: str, admin: dict = Depends(get_admin_user)):
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": "User rejected and deleted"}
 
+@api_router.delete("/admin/draw")
+async def delete_draw(year: Optional[int] = None, admin: dict = Depends(get_admin_user)):
+    if year is None:
+        year = datetime.now(timezone.utc).year
+    
+    # Check if draw exists
+    existing = await db.draws.find_one({"year": year}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail=f"No draw found for year {year}")
+    
+    # Delete the draw (assignments will be deleted via MongoDB if properly indexed, but let's be explicit)
+    # Note: In this schema, we don't have a separate assignments collection, 
+    # assignments are stored within the draw document
+    result = await db.draws.delete_one({"year": year})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Failed to delete draw")
+    
+    return {"message": f"Draw for year {year} deleted successfully", "year": year}
+
 @api_router.post("/admin/draw")
 async def create_draw(year: Optional[int] = None, admin: dict = Depends(get_admin_user)):
     if year is None:
