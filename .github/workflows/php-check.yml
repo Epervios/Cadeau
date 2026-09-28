@@ -2,7 +2,7 @@ name: Cadeau PHP verification
 on:
   pull_request:
   push:
-    branches: [main, audit/security-and-simplification]
+    branches: [main]
 
 jobs:
   syntax-and-unit:
@@ -27,10 +27,17 @@ jobs:
         run: node php/tests/ui-static.mjs
       - name: Unit test of Secret Santa draw
         run: php php/tests/unit.php
+      - name: Verify the single PHP application
+        run: |
+          set -eu
+          test -d php/api
+          test -d php/public
+          test ! -d frontend
+          test ! -d backend
       - name: Reject accidentally committed local configurations
         run: |
           set -eu
-          for f in php/config/database.php php/test_connection.php php/generate_admin_password.php backend/.env frontend/.env; do
+          for f in php/config/database.php php/test_connection.php php/generate_admin_password.php .env; do
             if test -f "$f"; then
               echo "::error file=$f::Do not commit local secrets or diagnostics"
               exit 1

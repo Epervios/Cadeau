@@ -1,32 +1,26 @@
-# Local settings and secrets
+# Secrets et configuration privée
 .env
 .env.*
 !.env.example
+php/config/database.php
 *.pem
 *credentials.json*
 *token.json*
-php/config/database.php
-php/generate_admin_password.php
-php/test_connection.php
-# Dependencies and builds
+# Sauvegardes et exports : jamais dans le dépôt
+*.bak
+*.dump
+*.sql.gz
+*.zip
+*.tar.gz
+backup/
+backups/
+# Fichiers générés
 node_modules/
-frontend/node_modules/
-frontend/build/
 build/
 dist/
-venv/
-.venv/
-__pycache__/
-*.pyc
-.cache/
-.pytest_cache/
 coverage/
-# Logs, editor, and backups
+.cache/
 *.log
-*.sql.gz
-*.dump
-*.bak
+.DS_Store
 .idea/
 .vscode/
-.DS_Store
-test_reports/

@@ -1,39 +1,49 @@
-# Cadeau — Secret Santa familial
+# Cadeau v3 — La magie des cadeaux
 
-Application de tirage au sort privé : inscription, validation des participants, tirage annuel et révélation individuelle. Interface en français.
+**Application privée de tirage au sort familial pour Noël**, en français, conçue pour être utilisable sur smartphone, tablette et ordinateur, y compris par des personnes peu à l'aise avec l'informatique.
 
-## Quelle implémentation utiliser ?
+![CI](https://github.com/Epervios/Cadeau/actions/workflows/php-check.yml/badge.svg)
 
-- **`php/` : PHP + MySQL**, adaptée à un hébergement mutualisé. C'est la version visée pour la simplification progressive. Ne pas déployer les deux implémentations en parallèle sur la même instance.
-- **`backend/` et `frontend/` : FastAPI + MongoDB + React**, prototype alternatif. Il ne partage ni données ni sessions avec PHP.
+## Application retenue
 
-Le dossier PHP conserve les données existantes dans MySQL ; aucune migration ou remise à zéro n'est autorisée sans sauvegarde et contrôle du propriétaire.
+Une **seule application : PHP 8.1+ et MySQL/MariaDB**. La version React/FastAPI/MongoDB de l'ancien prototype, les scripts de génération de dépôt et les rapports de test historiques ont été retirés. Le projet n'a pas besoin de Node pour l'exploitation ; Node sert uniquement aux tests statiques dans GitHub Actions.
 
-## Sécurité préalable à tout déploiement
+| Emplacement | Rôle |
+| --- | --- |
+| `php/public/` | Pages, styles, JavaScript et illustration de Noël |
+| `php/api/` | API PHP : authentification, participants, tirage |
+| `php/includes/`, `php/config/` | Logique commune et configuration serveur |
+| `php/database.sql` | Schéma d'une **nouvelle** base vide |
+| `php/migrations/` | Migrations d'une base **déjà existante** |
+| `php/bin/` | Commandes d'administration privées (PHP CLI seulement) |
+| `php/tests/` | Tests de tirage, d'interface et du parcours HTTP |
+| `docs/maquette-noel.html` | Maquette graphique approuvée, conservée en référence |
 
-Les premières versions de ce dépôt public exposaient des identifiants. **Si vous les avez utilisés, révoquez ou remplacez immédiatement les accès MySQL et administrateur, ainsi que tout secret réutilisé**, puis contrôlez les journaux d'accès. Les secrets retirés des fichiers actuels restent dans l'historique Git ; les considérer comme compromis.
+## Parcours familial
 
-- Ne commitez jamais `php/config/database.php`, `backend/.env` ou une sauvegarde MySQL.
-- Ne publiez jamais d'outil de génération de mot de passe ou de diagnostic SQL dans le répertoire servi par Apache.
-- Activer HTTPS et des sauvegardes contrôlées, avec un test de restauration.
-- Ne pas utiliser un compte administrateur avec mot de passe prédéfini.
+- **Je participe** : inscription et attente de validation par l'organisateur.
+- **Mon cadeau** : une enveloppe qui ne révèle le destinataire qu'à son ouverture, puis peut être refermée.
+- **Organiser** : demandes, liste des participants, contrôle et tirage avec confirmation.
+- **Mot de passe oublié** : l'organisateur remet à un participant un lien privé valable **30 minutes**, à usage unique et sans messagerie automatique. Le participant crée lui-même son mot de passe ; ses anciennes sessions sont invalidées.
 
-## Installer la version PHP
+Gros caractères, boutons larges, option **Agrandir le texte A+**, navigation clavier et mouvements réduits selon les préférences de l'appareil. Les invitations automatiques par e-mail et la gestion des exclusions entre couples ne sont **pas** implémentées.
 
-Voir [php/README_INSTALLATION.md](php/README_INSTALLATION.md). Préparer la base via [php/database.sql](php/database.sql), copier `php/config/database.example.php` vers `php/config/database.php` **sur la machine de déploiement** puis créer un administrateur avec `php/bin/bootstrap_admin.php` depuis un terminal PHP local ou hébergeur. Ne pas commiter les identifiants ni le fichier généré.
+## Installer ou mettre à jour
 
-## Installer la version alternative FastAPI
+Lire d'abord [les instructions d'installation PHP](php/README_INSTALLATION.md), puis [le guide de déploiement et de sécurité](docs/DEPLOIEMENT_SECURISÉ.md).
 
-Exiger `MONGO_URL`, `DB_NAME` et un `JWT_SECRET` aléatoire d'au moins 32 caractères. Pour initialiser un administrateur, définir ponctuellement `ADMIN_EMAIL`, `ADMIN_PASSWORD` (au moins 12 caractères) et, facultativement, `ADMIN_FIRST_NAME`. Un administrateur existant n'est pas réinitialisé. Supprimer les variables d'initialisation après usage. Cette version nécessite une revue distincte avant toute mise en production.
+- **Installation neuve** : base vide, import de `php/database.sql` et création du premier administrateur par `php/bin/bootstrap_admin.php` (terminal privé).
+- **Base existante** : sauvegarde restaurable, vérification de son schéma, puis application sur **une copie** des migrations `001_auth_attempts.sql` et `002_password_reset.sql` qui n'ont pas déjà été appliquées. Ne jamais importer directement le schéma initial dans une base remplie.
+- Configurer Apache/HTTPS et les secrets hors du dépôt. Tester tous les parcours avant de remplacer une installation publique.
 
-## Développement
+## Vérification
 
-La branche d'audit `audit/security-and-simplification` introduit un premier socle de sécurité et documente les limitations de l'existant. Elle ne vaut **pas** validation d'un déploiement en production. La feuille de route est dans [docs/REFONTE.md](docs/REFONTE.md).
+GitHub Actions lance les contrôles de syntaxe PHP/JavaScript/Bash, les tests de tirage et d'interface, puis des tests HTTP avec une base MariaDB **jetable**, dont la récupération sécurisée du mot de passe. Consulter le dernier run avant de déployer.
 
-## Aider un parent qui a oublié son mot de passe
+Voir [l'inventaire des fonctions et scénarios d'acceptation](docs/IMPLEMENTATION_V3.md).
 
-**Nouveauté Cadeau v3 :** l'organisateur peut ouvrir `Organiser → Participants` puis cliquer sur **Aider à retrouver son mot de passe**. Après confirmation, il obtient un lien privé à transmettre par messagerie ou directement sur l'appareil du parent. Le lien reste valable 30 minutes et ne fonctionne qu'une seule fois. Le parent définit lui-même un nouveau mot de passe ; toutes ses anciennes sessions sont déconnectées. Aucun service SMTP n'est nécessaire. Les comptes organisateurs se récupèrent depuis le terminal privé via `php/bin/reset_admin_password.php`.
+## Sécurité : action nécessaire sur l'installation réelle
 
-Pour une base **déjà existante**, appliquer `php/migrations/001_auth_attempts.sql` puis `php/migrations/002_password_reset.sql` sur une copie restaurable avant de mettre à jour l'application. Pour une base neuve, utiliser le schéma `php/database.sql`.
+Des identifiants figuraient dans les premières versions publiques du projet. **Changer les mots de passe SQL et administrateur concernés, ainsi que les secrets réutilisés**, et contrôler les journaux de l'hébergement. Les fichiers correspondants sont absents de la version actuelle, mais leur historique Git n'est pas purgé par un simple nettoyage du dépôt. Une purge de l'historique est une opération séparée qui doit être coordonnée avant toute réécriture des références Git.
 
-**Ne pas confondre suppression des fichiers et purge de l'historique Git :** les secrets anciennement publiés doivent être tournés sur l'hébergement, puis purgés de l'historique avec une opération dédiée et coordonnée. Supprimer la branche `main` sans réécrire l'historique de la nouvelle branche ne protège pas les anciens secrets.
+**Le nettoyage du dépôt GitHub ne déploie pas automatiquement l'application sur un hébergeur et ne touche aucune base de données existante.**

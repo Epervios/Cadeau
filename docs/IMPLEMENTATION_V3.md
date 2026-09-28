@@ -1,46 +1,37 @@
-# Cadeau v3 — interface de Noël implémentée
+# Cadeau v3 — Périmètre fonctionnel et réception
 
-Ce document recense les fonctionnalités effectivement intégrées à la branche `audit/security-and-simplification`. La maquette originale se trouve dans `docs/maquette-noel.html` ; **les fichiers actifs** sont dans `php/public/`.
+**Application active :** `php/` en PHP/MySQL, avec trois pages principales et une page de récupération d'accès. Les deux anciennes implémentations indépendantes ne sont plus maintenues. La [maquette Noël validée](maquette-noel.html) est conservée uniquement pour servir de référence visuelle, **sans compte, API ni tirage réels**.
 
-## Fonctionnement raccordé à l'API existante
+## Où intervenir ?
 
-- `index.html` : accueil festif validé, inscription réelle (prénom/e-mail/mot de passe), connexion et état « en attente d'approbation ».
-- `user.html` : lecture de l'état du tirage, puis ouverture de l'enveloppe par demande API explicite. Aucun destinataire dans le HTML initial ; bouton pour refermer et effacer le nom affiché.
-- `admin.html` : listes des participants confirmés et des inscriptions en attente, approbation/refus, trois étapes d'organisation, lancement du tirage et réinitialisation avec saisie de l'année.
-- `css/style.css` et `assets/christmas-village.svg` : identité fidèle à la maquette, entièrement locale et sans polices externes ; présentation responsive et boutons 56–64 px.
-- `js/common.js` : accès API PHP commun, jeton CSRF, messages accessibles et préférence d'agrandissement du texte persistée localement.
-- Les noms affichés à l'organisateur proviennent uniquement de l'API administrative autorisée ; le destinataire ne provient que de l'API personnelle du participant.
+- `php/public/index.html`, `js/app.js` : accueil enneigé, inscription, connexion, attente d'approbation et aide « J'ai oublié mon mot de passe ».
+- `php/public/user.html`, `js/user.js` : état du tirage et enveloppe privée. Le prénom du destinataire est demandé à l'API **uniquement au clic**, puis supprimé de la page quand l'enveloppe est refermée.
+- `php/public/admin.html`, `js/admin.js` : gestion des participants et du tirage en trois étapes, assistance familiale avec lien privé de récupération et confirmation explicite avant les opérations importantes.
+- `php/public/reset.html`, `js/reset.js` : choix par le participant d'un nouveau mot de passe à partir d'un lien privé à usage unique.
+- `php/public/css/style.css`, `assets/christmas-village.svg` : identité visuelle de Noël, sans polices ni ressources graphiques distantes.
+- `php/public/js/common.js` : accès API même origine avec CSRF, messages d'erreur lisibles et réglage A+ conservé sur l'appareil.
+- `php/api/auth.php`, `admin.php`, `user.php` : contrôle côté serveur de chaque permission, tirage et récupération. Ne pas déduire des droits à partir de l'interface seule.
+- `php/database.sql` et `php/migrations/` : création neuve et évolutions d'une base existante. Ne jamais mélanger ces procédures.
 
-## Délibérément hors du périmètre de cette version
+## Règles métier
 
-- Aucun envoi de courriel automatique ; aucune promesse de notification tant qu'un service SMTP n'a pas été configuré et vérifié.
-- La **récupération familiale assistée** est implémentée (voir ci-dessous). Le libre-service par e-mail et les invitations individuelles automatisées restent à développer après configuration SMTP.
-- Ni exclusion entre couples/foyers ni modification de liste après publication d'un tirage.
-- Aucun travail sur la version alternative React/FastAPI : elle demeure dans le dépôt pour compatibilité, mais la cible de livraison est la version PHP/MySQL.
-- Les comptes et tirages présents sur un hébergement réel n'ont pas été lus ni migrés depuis cette branche.
+Chaque participant **approuvé** reçoit exactement un destinataire différent de lui-même. L'organisateur approuvé participe actuellement au tirage. Une liste comportant des inscriptions en attente bloque la création du tirage. Une fois publié, celui-ci reste identique au rechargement ; une réinitialisation doit être confirmée, puis les personnes concernées prévenues.
 
-## Validation technique
+La récupération familiale ne requiert pas de SMTP : l'organisateur génère le lien et le transmet personnellement. Le lien est valable 30 minutes, révocable par création d'un nouveau lien, stocké uniquement sous forme de hash et à usage unique. Après succès, toutes les anciennes sessions du participant sont invalidées. Les comptes organisateurs utilisent une procédure privée en ligne de commande.
 
-Le workflow `.github/workflows/php-check.yml` exécute analyse syntaxique PHP/JS/Bash, tests du tirage, vérification statique des trois pages et tests SQL/HTTP sur une base MariaDB jetable. Cette chaîne ne remplace pas les tests d'affichage avec personnes âgées ni la vérification des accès Apache réels.
+**Non implémenté :** e-mails automatiques, invitation à usage unique à l'inscription, récupération autonome par e-mail, exclusions couples/foyers, notifications push. Ne pas présenter la maquette comme une fonctionnalité de production.
 
-## Scénarios de réception avec la famille
+## Tests et acceptation
 
-1. Sur un téléphone, demander à une personne peu habituée aux applications de rejoindre l'événement sans assistance et noter les blocages.
-2. Vérifier la lisibilité normale, l'option A+, le zoom navigateur à 200 %, le clavier et le lecteur d'écran.
-3. Vérifier qu'un inscrit en attente ne peut ouvrir ni l'enveloppe ni le tableau d'organisation.
-4. Tirer au sort avec des comptes d'essai ; vérifier qu'aucun compte ne reçoit son propre nom et que chacun reçoit un destinataire unique.
-5. Refermer l'enveloppe devant une autre personne et s'assurer que le nom n'est plus affiché.
-6. Vérifier l'affichage d'une panne réseau, d'un mot de passe incorrect, d'une demande déjà envoyée et d'une tentative de nouveau tirage.
-7. Contrôler un vrai hébergement avec HTTPS, sauvegarde/restauration, secret de base de données remplacé et restrictions d'accès Apache avant fusion.
+La CI sous `.github/workflows/php-check.yml` vérifie :
 
-**Ne pas fusionner automatiquement sur `main` ni publier en production** sans sauvegarde restaurable et rotation des secrets historiques exposés.
+1. Syntaxe PHP, JavaScript et Bash et absence de configuration locale sensible suivie.
+2. Invariants cryptographiques du tirage (aucun doublon ni auto-attribution), structure des quatre pages, accessibilité de base et absence de destinataire fictif dans l'HTML de production.
+3. Base MariaDB temporaire et parcours HTTP : inscription, permissions, approbation, protection CSRF, tirage unique, confidentialité, stabilité, demande tardive, réinitialisation et déconnexion.
+4. Récupération familiale : droits, jeton aléatoire hashé, rotation et expiration, refus d'une réutilisation, rejet de l'ancien mot de passe et invalidation des anciennes sessions.
 
-## Récupération de mot de passe familiale (implémentée)
+**Ces tests ne remplacent pas :** la sauvegarde/restauration réelle, le contrôle des règles Apache/HTTPS chez l'hébergeur, les migrations sur une copie des données existantes et des essais avec des personnes âgées sur de vrais téléphones (zoom à 200 %, clavier, lisibilité et compréhension des messages).
 
-Depuis `Organiser → Participants`, l'organisateur sélectionne **Aider à retrouver son mot de passe** pour un participant non administrateur. Après confirmation, le serveur crée un jeton de 256 bits ; **seul son SHA-256 est conservé en base**. Le lien est transmis par un message privé, en personne ou sur l'appareil du parent ; aucun serveur SMTP n'est requis. Il dure 30 minutes, chaque nouveau lien révoque le précédent, et la validation de ce lien supprime le jeton et invalide les anciennes sessions du participant.
+## Référence de déploiement
 
-La personne voit une page très lisible et choisit elle-même un nouveau mot de passe (12 caractères minimum), puis revient à la connexion. Le nom du destinataire n'apparaît ni dans ce lien ni dans la page de récupération. Le jeton est placé dans le **fragment** de l'URL, non transmis lors de la requête HTTP initiale et immédiatement effacé de la barre d'adresse au chargement. Cette mesure ne protège pas contre un message partagé au mauvais destinataire : vérifiez personnellement à qui vous l'envoyez.
-
-Si l'organisateur perd son propre mot de passe, utiliser `php/bin/reset_admin_password.php` **uniquement depuis un terminal privé** sur une base disposant de la migration `002_password_reset.sql`.
-
-La migration `002_password_reset.sql` ajoute la colonne `users.auth_version` et la table `password_reset_tokens` ; **obligatoire avant tout déploiement de cette fonctionnalité** sur une base existante. Les sessions ouvertes avant la migration devront se reconnecter.
+[Installation PHP](../php/README_INSTALLATION.md) · [Guide de sécurité et de déploiement](DEPLOIEMENT_SECURISÉ.md)
