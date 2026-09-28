@@ -5,6 +5,12 @@ document.addEventListener("DOMContentLoaded",()=>{
   button("join",()=>navigate("register"));
   button("already",()=>navigate("login"));
   document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.back)));
+  button("forgot",()=>{
+    const help=document.getElementById("forgotHelp");
+    help.hidden=!help.hidden;
+    document.getElementById("forgot").setAttribute("aria-expanded",String(!help.hidden));
+    if(!help.hidden)help.scrollIntoView({block:"nearest"});
+  });
   button("waitingReturn",()=>navigate("welcome"));
   button("waitingLogout",logout);
 

@@ -71,4 +71,18 @@
  <div class="form-message" id="resetMessage" hidden aria-live="polite"></div>
  <div class="dialog-actions"><button type="button" class="cancel" id="cancelReset">Annuler</button><button type="button" id="confirmReset">Confirmer la réinitialisation</button></div>
 </dialog>
+<dialog id="helpDialog" aria-labelledby="helpTitle">
+  <h2 id="helpTitle">Aider un proche à retrouver son accès</h2>
+  <p id="helpDescription">Ce lien personnel permettra de choisir un nouveau mot de passe. Il n'affiche aucun destinataire.</p>
+  <p><strong>Valable 30 minutes, une seule utilisation.</strong> Ne l'envoyez qu'à la personne concernée.</p>
+  <div class="field">
+    <label for="resetShareLink">Lien personnel à transmettre</label>
+    <input type="text" id="resetShareLink" readonly autocomplete="off" spellcheck="false">
+  </div>
+  <div class="form-message" id="copyHelp" aria-live="polite" hidden></div>
+  <div class="dialog-actions">
+    <button id="copyResetLink" type="button">Copier le lien</button>
+    <button class="cancel" id="closeHelp" type="button">Fermer</button>
+  </div>
+</dialog>
 </body></html>

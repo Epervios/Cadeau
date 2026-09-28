@@ -31,6 +31,15 @@ document.addEventListener("DOMContentLoaded",()=>{
       }
       li.append(buttons);
     }
+    if(Number(person.is_admin)!==1){
+      const actions=document.createElement("div");actions.className="person-buttons";
+      const reset=document.createElement("button");reset.type="button";
+      reset.className="help-account";
+      reset.textContent="Aider à retrouver son mot de passe";
+      reset.setAttribute("aria-label","Préparer un lien de réinitialisation pour "+(person.first_name||"ce participant"));
+      reset.addEventListener("click",()=>generatePasswordReset(person,reset));
+      actions.append(reset);li.append(actions);
+    }
     return li;
   }
   function render(){
@@ -98,6 +107,45 @@ document.addEventListener("DOMContentLoaded",()=>{
       showMessage(action==="approve-user"?"Participation acceptée.":"Inscription refusée.","success");
     }catch(error){showMessage(error.message);}
     finally{if(button.isConnected)busy(button,false);}
+  }
+
+  const helpDialog=byId("helpDialog");
+  helpDialog.addEventListener("close",()=>{
+    byId("resetShareLink").value="";
+    byId("helpDescription").textContent="";
+    clearMessage("copyHelp");
+  });
+  byId("closeHelp").addEventListener("click",()=>helpDialog.close());
+  byId("copyResetLink").addEventListener("click",async()=>{
+    const link=byId("resetShareLink");
+    if(!link.value){showMessage("Ce lien n'est plus disponible.","error","copyHelp");return;}
+    try{
+      if(!navigator.clipboard || !navigator.clipboard.writeText)throw new Error("Presse-papiers non disponible");
+      await navigator.clipboard.writeText(link.value);
+      showMessage("Lien copié. Envoyez-le uniquement à la bonne personne.","success","copyHelp");
+    }catch{
+      link.focus();link.select();
+      showMessage("Le lien est sélectionné. Copiez-le manuellement pour l'envoyer.","success","copyHelp");
+    }
+  });
+  async function generatePasswordReset(person,button){
+    const id=Number(person.id);
+    if(!Number.isSafeInteger(id)||id<1||Number(person.is_admin)===1)return;
+    if(!window.confirm("Préparer un lien personnel pour "+person.first_name+" ? L'ancien lien éventuel sera annulé."))return;
+    busy(button,true);clearMessage();
+    try{
+      const response=await apiRequest("/admin.php?action=create-password-reset",{
+        method:"POST",data:{user_id:id}
+      });
+      if(!/^[a-f0-9]{64}$/.test(response.token))throw new Error("Réponse du serveur invalide.");
+      const destination=new URL("reset.html#token="+response.token,window.location.href);
+      byId("helpDescription").textContent="Voici le lien pour "+person.first_name+". Partagez-le par message privé ou montrez-le directement sur son appareil.";
+      byId("resetShareLink").value=destination.href;
+      clearMessage("copyHelp");
+      helpDialog.showModal();
+      byId("copyResetLink").focus();
+    }catch(error){showMessage(error.message);}
+    finally{busy(button,false);}
   }
 
   byId("createDrawBtn").addEventListener("click",()=>{

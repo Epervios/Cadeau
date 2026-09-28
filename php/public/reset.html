@@ -1,0 +1,48 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="referrer" content="no-referrer">
+<title>Choisir un nouveau mot de passe — Cadeau</title>
+<link rel="stylesheet" href="css/style.css">
+<script defer src="js/common.js"></script><script defer src="js/reset.js"></script>
+</head><body><a class="skip" href="#contenu">Aller au contenu</a>
+<div class="site">
+<header class="site-head">
+  <span class="brand">✦ CADEAU · NOËL EN FAMILLE ✦</span>
+  <div class="head-actions">
+    
+    <button id="larger" type="button" aria-pressed="false">Agrandir le texte A+</button>
+  </div>
+</header>
+<main class="sheet" id="contenu">
+<div class="hero">
+  <img class="village" src="assets/christmas-village.svg" alt="" width="1000" height="360">
+  <div class="hero-heading">
+    <div class="eyebrow">✦ Notre Noël en famille ✦</div>
+    <h1>La magie des cadeaux</h1>
+    <p>Un prénom, une surprise, un beau moment à partager.</p>
+  </div>
+</div>
+
+<section class="page center" id="reset" aria-labelledby="reset-title">
+  <div class="paper">
+    <div class="holly" aria-hidden="true">✦</div>
+    <h2 id="reset-title" tabindex="-1">Retrouvons la magie de Noël&nbsp;!</h2>
+    <p id="resetInfo" class="lead">Choisissez un nouveau mot de passe pour retrouver votre espace personnel.</p>
+    <form id="resetForm" class="form" novalidate hidden>
+      <div class="field">
+        <label for="new-password">Votre nouveau mot de passe</label>
+        <input id="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required>
+        <p class="hint">Choisissez au moins 12 caractères. Votre appareil peut vous proposer un mot de passe facile à retrouver.</p>
+      </div>
+      <div class="field">
+        <label for="repeat-password">Confirmez le nouveau mot de passe</label>
+        <input id="repeat-password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required>
+      </div>
+      <button class="cta" type="submit">Enregistrer mon nouveau mot de passe</button>
+    </form>
+    <div class="form-message" id="formMessage" hidden aria-live="polite"></div>
+    <a class="back-link" href="index.html" id="returnLogin">Retour à la connexion</a>
+  </div>
+</section>
+<footer class="footer">Une carte de Noël qui prend vie · La magie d'être ensemble ✦</footer>
+</main></div></body></html>

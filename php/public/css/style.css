@@ -139,3 +139,9 @@ dialog input[type=number]{width:100%;min-height:60px;font-size:inherit;padding:1
 }
 @media(max-width:360px){.hero-heading h1{font-size:1.85rem}.stat-row{grid-template-columns:1fr}}
 @media(forced-colors:active){button,.step,.paper,.envelope{forced-color-adjust:auto}}
+
+/* Assistance familiale : boutons lisibles sans supprimer l'identité festive. */
+.person-buttons .help-account{background:#fff5e2;color:#173a32;border:2px solid #a8793a}
+.person-buttons .help-account:hover{background:#f3e3c5}
+#resetShareLink{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;font-size:.85em;overflow-wrap:anywhere;background:#fffcf2}
+#helpDialog .field{margin:17px 0}
