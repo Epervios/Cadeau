@@ -59,9 +59,17 @@ if ($action === 'create-draw') {
             $pdo->rollBack();
             jsonError('Un tirage existe déjà pour cette année', 409);
         }
-        // Liste figée dans la transaction pendant la création des attributions.
-        $stmt = $pdo->query('SELECT id FROM users WHERE is_approved = 1 ORDER BY id FOR UPDATE');
-        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        // Tous les comptes sont verrouillés pour qu'une demande en attente
+        // ne soit jamais omise par inadvertance pendant le tirage.
+        $stmt = $pdo->query('SELECT id, is_approved FROM users ORDER BY id FOR UPDATE');
+        $users = $stmt->fetchAll();
+        foreach ($users as $participant) {
+            if (!(bool)$participant['is_approved']) {
+                $pdo->rollBack();
+                jsonError('Traitez toutes les inscriptions avant de lancer le tirage.', 409);
+            }
+        }
+        $ids = array_column($users, 'id');
         if (count($ids) < 2) {
             $pdo->rollBack();
             jsonError('Au moins deux participants approuvés sont nécessaires', 400);

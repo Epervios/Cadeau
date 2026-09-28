@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       await apiRequest("/admin.php?action=create-draw",{method:"POST",data:{year}});
       drawDialog.close();
       await loadData();showMessage("Le tirage a été réalisé. La magie de Noël peut commencer !","success");
-    }catch(error){drawDialog.close();showMessage(error.message);await loadData();}
+    }catch(error){drawDialog.close();await loadData();showMessage(error.message);}
     finally{busy(button,false);}
   });
   byId("resetDrawBtn").addEventListener("click",()=>{

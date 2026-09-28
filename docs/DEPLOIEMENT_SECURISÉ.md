@@ -35,3 +35,11 @@ Les nouveaux contrôles de tentative de connexion nécessitent **001_auth_attemp
 - La rotation des secrets réels et l'historique public Git demandent une opération distincte.
 - Les index additionnels et la modification de clés étrangères ne sont pas appliqués automatiquement à une base existante.
 - Un test HTTP sur la vraie configuration Apache, une restauration MySQL et des tests navigateur restent requis.
+
+## Interface de Noël validée
+
+Le nouvel accueil, l'espace personnel et le tableau organisateur reprennent la maquette `docs/maquette-noel.html`, sans les éléments de démonstration. La nouvelle interface a été reliée aux points d'entrée réels `api/auth.php`, `api/user.php` et `api/admin.php`. Tous les noms affichés proviennent de la base : **aucune attribution fictive n'est incorporée à l'interface de production**.
+
+Le destinataire est demandé uniquement après l'ouverture explicite de l'enveloppe. Le bouton pour refermer masque et efface le nom du DOM. La navigation est faite au clavier, les grandes cibles tactiles et l'agrandissement du texte sont conservés. Le test HTTP automatisé `php/tests/http-integration.sh` vérifie la chaîne d'inscription, d'approbation, de tirage et de permissions sur une base jetable.
+
+L'envoi de courriels d'invitation ou de récupération de compte n'est **pas implémenté** : il requiert une connexion SMTP opérationnelle et un protocole de validation. Une erreur de réseau n'est jamais assimilée à l'absence de tirage. Vérifier le rendu sur vrais téléphones et avec des utilisateurs âgés avant publication.
