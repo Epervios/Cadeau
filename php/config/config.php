@@ -26,14 +26,14 @@ error_reporting(E_ALL);
 // Chemin de base de l'application
 define('BASE_PATH', dirname(__DIR__));
 
-// URL de base (à adapter selon votre hébergeur)
-define('BASE_URL', 'http://localhost/secret-santa');
-
 // Les API sont exclusivement accessibles depuis le même domaine.
 // Aucun en-tête CORS wildcard ne doit être émis sur une API à cookies.
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
 
 // Inclure la connexion à la base de données
 require_once BASE_PATH . '/config/database.php';

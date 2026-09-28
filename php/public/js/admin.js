@@ -67,7 +67,7 @@ function updateUI() {
     const drawWarning = document.getElementById('drawWarning');
     const drawInfo = document.getElementById('drawInfo');
     
-    if (approvedUsers.length < 2) {
+    if (approvedUsers.length < 2 && !drawStatus.has_draw) {
         drawBtn.disabled = true;
         drawWarning.classList.remove('hidden');
     } else {
@@ -209,7 +209,7 @@ async function resetDraw() {
         const response = await fetch(`${API_BASE}/admin.php?action=delete-draw`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await csrfToken() },
-            body: JSON.stringify({ year: year })
+            body: JSON.stringify({ year: year, confirm_year: year })
         });
         
         const data = await response.json();

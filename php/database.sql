@@ -45,3 +45,13 @@ CREATE TABLE IF NOT EXISTS assignments (
 
 -- Aucun compte ni mot de passe administrateur prédéfini.
 -- Créez le premier admin avec bin/bootstrap_admin.php (CLI uniquement).
+
+-- Rate limiting de connexion (les entrées anciennes peuvent être purgées périodiquement).
+CREATE TABLE IF NOT EXISTS auth_attempts (
+    subject_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY,
+    attempts SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    window_started BIGINT UNSIGNED NOT NULL,
+    blocked_until BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_auth_attempts_updated (updated_at)
+) ENGINE=InnoDB;

@@ -1,187 +1,112 @@
 <?php
-require_once '../config/config.php';
-
-// Vérifier les droits admin
+require_once __DIR__ . '/../config/config.php';
 requireAdmin();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
+$pdo = getDBConnection();
 
 if ($method === 'GET') {
-    
-    if ($action === 'pending-users') {
-        // Obtenir les utilisateurs en attente
-        $pdo = getDBConnection();
-        $stmt = $pdo->query(
-            "SELECT id, first_name, email, is_admin, is_approved, created_at 
-             FROM users 
-             WHERE is_approved = 0 
-             ORDER BY created_at DESC"
-        );
-        $users = $stmt->fetchAll();
-        
-        jsonResponse($users);
-        
-    } elseif ($action === 'users') {
-        // Obtenir tous les utilisateurs
-        $pdo = getDBConnection();
-        $stmt = $pdo->query(
-            "SELECT id, first_name, email, is_admin, is_approved, created_at 
-             FROM users 
-             ORDER BY created_at DESC"
-        );
-        $users = $stmt->fetchAll();
-        
-        jsonResponse($users);
-        
-    } else {
-        jsonError('Action invalide');
+    if ($action === 'pending-users' || $action === 'users') {
+        $sql = 'SELECT id, first_name, email, is_admin, is_approved, created_at FROM users';
+        if ($action === 'pending-users') $sql .= ' WHERE is_approved = 0';
+        $sql .= ' ORDER BY created_at DESC';
+        jsonResponse($pdo->query($sql)->fetchAll());
     }
-    
-} elseif ($method === 'POST') {
-    requireCsrf();
-    
-    if ($action === 'approve-user') {
-        // Approuver un utilisateur
-        $userId = $_GET['user_id'] ?? null;
-        
-        if (!$userId) {
-            jsonError('ID utilisateur requis');
-        }
-        
-        $pdo = getDBConnection();
-        $stmt = $pdo->prepare("UPDATE users SET is_approved = 1 WHERE id = ?");
-        $stmt->execute([$userId]);
-        
-        if ($stmt->rowCount() > 0) {
-            jsonResponse(['message' => 'Utilisateur approuvé']);
-        } else {
-            jsonError('Utilisateur non trouvé', 404);
-        }
-        
-    } elseif ($action === 'reject-user') {
-        // Rejeter (supprimer) un utilisateur
-        $userId = $_GET['user_id'] ?? null;
-        
-        if (!$userId) {
-            jsonError('ID utilisateur requis');
-        }
-        
-        $pdo = getDBConnection();
-        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? AND is_admin = 0 AND is_approved = 0");
-        $stmt->execute([$userId]);
-        
-        if ($stmt->rowCount() > 0) {
-            jsonResponse(['message' => 'Utilisateur supprimé']);
-        } else {
-            jsonError('Seule une inscription en attente peut être rejetée ; les participants existants ne sont pas supprimés', 404);
-        }
-        
-    } elseif ($action === 'delete-draw') {
-        // Supprimer un tirage pour permettre de le relancer
-        $input = getJsonInput();
-        $year = $input['year'] ?? date('Y');
-        
-        $pdo = getDBConnection();
-        
-        try {
-            $pdo->beginTransaction();
-            
-            // Récupérer l'ID du tirage
-            $stmt = $pdo->prepare("SELECT id FROM draws WHERE year = ?");
-            $stmt->execute([$year]);
-            $draw = $stmt->fetch();
-            
-            if (!$draw) {
-                $pdo->rollBack();
-                jsonError("Aucun tirage trouvé pour l'année $year", 404);
-            }
-            
-            // Supprimer les attributions liées
-            $stmt = $pdo->prepare("DELETE FROM assignments WHERE draw_id = ?");
-            $stmt->execute([$draw['id']]);
-            
-            // Supprimer le tirage
-            $stmt = $pdo->prepare("DELETE FROM draws WHERE id = ?");
-            $stmt->execute([$draw['id']]);
-            
-            $pdo->commit();
-            
-            jsonResponse([
-                'message' => "Tirage de l'année $year supprimé avec succès",
-                'year' => $year
-            ]);
-            
-        } catch (PDOException $e) {
-            $pdo->rollBack();
-            error_log("Delete draw error: " . $e->getMessage());
-            jsonError('Erreur lors de la suppression du tirage', 500);
-        }
-        
-    } elseif ($action === 'create-draw') {
-        // Créer un tirage au sort
-        $input = getJsonInput();
-        $year = $input['year'] ?? date('Y');
-        
-        $pdo = getDBConnection();
-        
-        // Vérifier si un tirage existe déjà pour cette année
-        $stmt = $pdo->prepare("SELECT id FROM draws WHERE year = ?");
+    jsonError('Action inconnue', 404);
+}
+if ($method !== 'POST') jsonError('Méthode non autorisée', 405);
+requireCsrf();
+
+if ($action === 'approve-user' || $action === 'reject-user') {
+    $id = filter_var($_GET['user_id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id || $id < 1) jsonError('Participant invalide', 400);
+    $year = (int)date('Y');
+    try {
+        $pdo->beginTransaction();
+        // Bloquer les changements de liste après publication du tirage annuel.
+        $stmt = $pdo->prepare('SELECT id FROM draws WHERE year = ? FOR UPDATE');
         $stmt->execute([$year]);
         if ($stmt->fetch()) {
-            jsonError("Un tirage existe déjà pour l'année $year. Supprimez-le d'abord si vous voulez le relancer.");
-        }
-        
-        // Obtenir tous les utilisateurs approuvés
-        $stmt = $pdo->query("SELECT id FROM users WHERE is_approved = 1");
-        $users = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        if (count($users) < 2) {
-            jsonError('Au moins 2 participants approuvés sont nécessaires');
-        }
-        
-        // Créer les attributions
-        $assignments = createSecretSantaAssignment($users);
-        
-        if (!$assignments) {
-            jsonError('Impossible de créer le tirage', 500);
-        }
-        
-        try {
-            $pdo->beginTransaction();
-            
-            // Créer le tirage
-            $stmt = $pdo->prepare("INSERT INTO draws (year, created_by) VALUES (?, ?)");
-            $stmt->execute([$year, getCurrentUserId()]);
-            $drawId = $pdo->lastInsertId();
-            
-            // Insérer les attributions
-            $stmt = $pdo->prepare(
-                "INSERT INTO assignments (draw_id, giver_id, receiver_id) VALUES (?, ?, ?)"
-            );
-            
-            foreach ($assignments as $giverId => $receiverId) {
-                $stmt->execute([$drawId, $giverId, $receiverId]);
-            }
-            
-            $pdo->commit();
-            
-            jsonResponse([
-                'message' => "Tirage créé pour l'année $year",
-                'participants' => count($users)
-            ]);
-            
-        } catch (PDOException $e) {
             $pdo->rollBack();
-            error_log("Draw creation error: " . $e->getMessage());
-            jsonError('Erreur lors de la création du tirage', 500);
+            jsonError('Le tirage de cette année est déjà publié. Vous ne pouvez plus modifier ses participants.', 409);
         }
-        
-    } else {
-        jsonError('Action invalide');
+        if ($action === 'approve-user') {
+            $stmt = $pdo->prepare('UPDATE users SET is_approved = 1 WHERE id = ? AND is_admin = 0 AND is_approved = 0');
+        } else {
+            $stmt = $pdo->prepare('DELETE FROM users WHERE id = ? AND is_admin = 0 AND is_approved = 0');
+        }
+        $stmt->execute([$id]);
+        $affected = $stmt->rowCount();
+        $pdo->commit();
+        if ($affected === 0) jsonError('Participant introuvable ou déjà traité', 404);
+        jsonResponse(['message' => $action === 'approve-user' ? 'Participant approuvé' : 'Inscription rejetée']);
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('Mise à jour participant échouée : ' . $e->getCode());
+        jsonError('Opération momentanément indisponible', 500);
     }
-    
-} else {
-    jsonError('Méthode non autorisée', 405);
 }
-?>
+
+if ($action === 'create-draw') {
+    $body = getJsonInput();
+    $year = validYear($body['year'] ?? date('Y'));
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare('SELECT id FROM draws WHERE year = ? FOR UPDATE');
+        $stmt->execute([$year]);
+        if ($stmt->fetch()) {
+            $pdo->rollBack();
+            jsonError('Un tirage existe déjà pour cette année', 409);
+        }
+        // Liste figée dans la transaction pendant la création des attributions.
+        $stmt = $pdo->query('SELECT id FROM users WHERE is_approved = 1 ORDER BY id FOR UPDATE');
+        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if (count($ids) < 2) {
+            $pdo->rollBack();
+            jsonError('Au moins deux participants approuvés sont nécessaires', 400);
+        }
+        $assignments = createSecretSantaAssignment($ids);
+        $stmt = $pdo->prepare('INSERT INTO draws (year, created_by) VALUES (?, ?)');
+        $stmt->execute([$year, getCurrentUserId()]);
+        $drawId = $pdo->lastInsertId();
+        $stmt = $pdo->prepare('INSERT INTO assignments (draw_id, giver_id, receiver_id) VALUES (?, ?, ?)');
+        foreach ($assignments as $giverId => $receiverId) $stmt->execute([$drawId, $giverId, $receiverId]);
+        $pdo->commit();
+        jsonResponse(['message' => 'Tirage réalisé', 'year' => $year, 'participants' => count($ids)]);
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        if (($e->errorInfo[1] ?? null) == 1062) jsonError('Un tirage existe déjà pour cette année', 409);
+        error_log('Création du tirage échouée : ' . $e->getCode());
+        jsonError('Impossible de finaliser le tirage', 500);
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('Génération du tirage échouée');
+        jsonError('Impossible de générer un tirage valide', 500);
+    }
+}
+
+if ($action === 'delete-draw') {
+    $body = getJsonInput();
+    $year = validYear($body['year'] ?? date('Y'));
+    if (($body['confirm_year'] ?? null) !== $year) jsonError('Confirmez explicitement l’année du tirage à réinitialiser', 400);
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare('SELECT id FROM draws WHERE year = ? FOR UPDATE');
+        $stmt->execute([$year]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            $pdo->rollBack();
+            jsonError('Aucun tirage trouvé pour cette année', 404);
+        }
+        $stmt = $pdo->prepare('DELETE FROM draws WHERE id = ?');
+        $stmt->execute([$row['id']]);
+        $pdo->commit();
+        jsonResponse(['message' => 'Tirage réinitialisé', 'year' => $year]);
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('Suppression du tirage échouée : ' . $e->getCode());
+        jsonError('Impossible de réinitialiser ce tirage', 500);
+    }
+}
+jsonError('Action inconnue', 404);

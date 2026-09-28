@@ -1,43 +1,18 @@
-# Configuration Apache pour Secret Santa
-
-# Activer la réécriture d'URL
+# Le répertoire php/ peut être la racine web sur hébergement mutualisé.
+# Autoriser uniquement les pages statiques publiques et les 3 points d'entrée API.
+Options -Indexes
 RewriteEngine On
-
-# Rediriger toutes les requêtes vers HTTPS (optionnel)
-# RewriteCond %{HTTPS} off
-# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-# Gérer les requêtes API
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^api/(.*)$ api/$1 [L]
-
-# Protection des fichiers sensibles
-<FilesMatch "\.(sql|md|env)$">
-    Order allow,deny
-    Deny from all
+RewriteRule ^$ public/index.html [R=302,L]
+RewriteRule ^(?:config|includes|bin|migrations|tests)(?:/|$) - [F,L,NC]
+RewriteRule ^api/(?!auth\.php$|admin\.php$|user\.php$).+ - [F,L,NC]
+RewriteRule ^(?!api/|public/).+ - [F,L,NC]
+<FilesMatch "(?i)\.(?:sql|md|env|log|bak|ini|dist)$">
+    Require all denied
 </FilesMatch>
-
-# Activer la compression
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
-</IfModule>
-
-# Cache des fichiers statiques
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType text/css "access plus 1 month"
-    ExpiresByType text/javascript "access plus 1 month"
-    ExpiresByType application/javascript "access plus 1 month"
-    ExpiresByType image/gif "access plus 1 year"
-    ExpiresByType image/jpeg "access plus 1 year"
-    ExpiresByType image/png "access plus 1 year"
-    ExpiresByType image/svg+xml "access plus 1 year"
-</IfModule>
-
-# Sécurité
 <IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set X-XSS-Protection "1; mode=block"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "no-referrer"
+    Header always set Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+    # N'activer HSTS que lorsque HTTPS est activé sur l'ensemble du domaine.
 </IfModule>

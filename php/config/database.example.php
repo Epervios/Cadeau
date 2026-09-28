@@ -5,7 +5,7 @@
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'cadeau');  // Nom de votre base de données
 define('DB_USER', 'cadeau_admin');  // Utilisateur MySQL
-define('DB_PASS', 'VOTRE_MOT_DE_PASSE');  // CHANGEZ CETTE VALEUR !
+define('DB_PASS', getenv('CADEAU_DB_PASSWORD') ?: '');  // Valeur fournie hors code
 define('DB_CHARSET', 'utf8mb4');
 
 // Connexion à la base de données
