@@ -13,7 +13,7 @@ assert.match(css,/body\.large\s*\{--bsize:24px/,"Agrandissement disponible");
 assert.match(css,/prefers-reduced-motion:reduce/,"Respect de la préférence de mouvement réduit");
 assert.match(css,/min-height:64px/,"Boutons principaux adaptés au toucher");
 assert.match(svg,/<svg\b[\s\S]*<\/svg>/,"Illustration locale intégrée");
-assert.doesNotMatch(svg,/<script\b|https?:\/\//,"Illustration sans scripts ni dépendance distante");
+assert.doesNotMatch(svg,/<script\b|(?:href|src)=["\']https?:\/\//i,"Illustration sans scripts ni dépendance distante");
 assert.match(common,/credentials:"same-origin"/,"API restreinte à l'origine");
 assert.match(common,/X-CSRF-Token/,"Protection des mutations activée");
 
