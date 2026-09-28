@@ -1,71 +1,45 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secret Santa - Mon Attribution</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="snowflakes" id="snowflakes"></div>
-    
-    <div class="user-header">
-        <div class="user-header-content">
-            <div class="user-title">
-                <span class="gift-icon">🎁</span>
-                <div>
-                    <h1 id="pageTitle">Secret Santa 2025</h1>
-                    <p id="userWelcome">Bonjour!</p>
-                </div>
-            </div>
-            <button onclick="logout()" class="btn btn-outline">Déconnexion</button>
-        </div>
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light"><title>Mon cadeau — Cadeau</title>
+<link rel="stylesheet" href="css/style.css">
+<script defer src="js/common.js"></script><script defer src="js/user.js"></script>
+</head><body><a class="skip" href="#contenu">Aller au contenu</a>
+<div class="site">
+<header class="site-head">
+  <span class="brand">✦ CADEAU · NOËL EN FAMILLE ✦</span>
+  <div class="head-actions">
+    <button type="button" class="logout-button" id="logout">Me déconnecter</button>
+    <button id="larger" type="button" aria-pressed="false">Agrandir le texte A+</button>
+  </div>
+</header>
+<main class="sheet" id="contenu">
+<div class="hero">
+  <img class="village" src="assets/christmas-village.svg" alt="" width="1000" height="360">
+  <div class="hero-heading">
+    <div class="eyebrow">✦ Notre Noël en famille ✦</div>
+    <h1>La magie des cadeaux</h1>
+    <p>Un prénom, une surprise, un beau moment à partager.</p>
+  </div>
+</div>
+<section class="page center" id="mygift" aria-labelledby="gift-title">
+  <div class="paper">
+    <div class="holly" aria-hidden="true">✦</div>
+    <h2 id="gift-title" tabindex="-1">Une surprise rien que pour vous</h2>
+    <p class="lead" id="gift-intro">Nous préparons votre surprise de Noël…</p>
+    <div class="envelope" id="envelope" aria-hidden="true"><span class="seal">✦</span></div>
+    <div class="form-message" id="formMessage" hidden aria-live="polite"></div>
+    <div id="waitingGift" hidden class="stage-note">Le tirage n'a pas encore eu lieu. Revenez bientôt pour ouvrir votre enveloppe&nbsp;!</div>
+    <div class="result" id="giftResult" aria-live="polite" hidden>
+      <p>Cette année, vous offrirez un cadeau à…</p>
+      <p id="recipientName" class="big-name"></p>
+      <p>Chut… gardez la surprise jusqu'à Noël&nbsp;!</p>
     </div>
-
-    <div class="container user-container">
-        <div id="loadingSpinner" class="loading">
-            <div class="spinner"></div>
-        </div>
-
-        <!-- Carte avec attribution -->
-        <div id="assignmentCard" class="assignment-card hidden">
-            <div class="assignment-header">
-                <div class="gift-icon-large">🎁</div>
-                <h2>Votre attribution Secret Santa</h2>
-                <p>Année <span id="assignmentYear">2025</span></p>
-            </div>
-            <div class="assignment-body">
-                <p class="assignment-label">Vous devez offrir un cadeau à :</p>
-                <div class="assignment-name-box">
-                    <p id="assignmentName" class="assignment-name">...</p>
-                </div>
-            </div>
-            <div class="assignment-reminders">
-                <h3>✨ Rappels importants :</h3>
-                <ul>
-                    <li>Gardez cette attribution secrète! 🤫</li>
-                    <li>Préparez un cadeau attentionné 🎁</li>
-                    <li>Profitez de la magie de Noël ✨</li>
-                    <li>Joyeuses fêtes à toute la famille! 🎄</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Carte sans tirage -->
-        <div id="noDrawCard" class="no-draw-card hidden">
-            <div class="no-draw-icon">🎁</div>
-            <h2>Pas encore de tirage</h2>
-            <p>Le tirage au sort pour l'année <span id="noDrawYear">2025</span> n'a pas encore été effectué.</p>
-            <p class="no-draw-text">L'administrateur lancera bientôt le tirage. Revenez plus tard!</p>
-            <div class="no-draw-badge">En attente du tirage</div>
-        </div>
-
-        <div class="christmas-decorations">
-            🎄 ⛄ 🎅 🎁 ✨
-        </div>
-    </div>
-
-    <script src="js/user.js"></script>
-</body>
-</html>
+    <button class="cta" type="button" id="open-envelope" disabled hidden>Ouvrir mon enveloppe</button>
+    <button class="secondary" type="button" id="close-envelope" hidden>Refermer mon enveloppe</button>
+    <button class="secondary" type="button" id="retryGift" hidden>Réessayer</button>
+    <a class="back-link" id="adminLink" href="admin.html" hidden>Organiser notre Noël</a>
+  </div>
+  <p class="helper">Votre destinataire n'apparaît qu'après avoir ouvert l'enveloppe, dans votre espace personnel.</p>
+</section>
+<footer class="footer">Une carte de Noël qui prend vie · La magie d'être ensemble ✦</footer>
+</main></div></body></html>
