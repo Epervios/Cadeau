@@ -1,0 +1,57 @@
+name: Cadeau PHP verification
+on:
+  pull_request:
+  push:
+    branches: [main, audit/security-and-simplification]
+
+jobs:
+  syntax-and-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PHP 8.3 CLI
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y php8.3-cli
+      - name: Syntax of all PHP source files
+        run: |
+          set -eu
+          find php -type f -name '*.php' ! -path 'php/config/database.php' -print0 | xargs -0 -n1 php -l
+      - name: Validate JavaScript sources syntax
+        run: |
+          set -eu
+          for f in php/public/js/*.js; do node --check "$f"; done
+      - name: Unit test of Secret Santa draw
+        run: php php/tests/unit.php
+      - name: Reject accidentally committed local configurations
+        run: |
+          set -eu
+          for f in php/config/database.php php/test_connection.php php/generate_admin_password.php backend/.env frontend/.env; do
+            if test -f "$f"; then
+              echo "::error file=$f::Do not commit local secrets or diagnostics"
+              exit 1
+            fi
+          done
+  schema-smoke:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: localtestonly
+          MARIADB_DATABASE: cadeau_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MariaDB client
+        run: sudo apt-get update -qq && sudo apt-get install -y mariadb-client
+      - name: Validate clean schema
+        env:
+          MYSQL_PWD: localtestonly
+        run: |
+          mariadb -h 127.0.0.1 -u root cadeau_test < php/database.sql
+          mariadb -h 127.0.0.1 -u root cadeau_test -e "SHOW TABLES; SHOW INDEX FROM assignments;"
