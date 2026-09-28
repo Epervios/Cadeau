@@ -18,7 +18,7 @@ csrf() {
 
 # request cookie GET|POST endpoint code [json]
 request() {
-  local cookies="$1" method="$2" endpoint="$3" expected="$4" data="${5:-{}}"
+  local cookies="$1" method="$2" endpoint="$3" expected="$4"\n  local data="{}"\n  if (( $# >= 5 )); then data="$5"; fi
   local code token
   local args=(--silent --show-error -b "$cookies" -c "$cookies"
     -H "Accept: application/json" -o "$TEMP/response.json"
