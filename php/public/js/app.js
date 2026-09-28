@@ -1,134 +1,80 @@
-async function csrfToken() {
-    const response = await fetch(`${API_BASE}/auth.php?action=csrf`, { credentials: 'same-origin', cache: 'no-store' });
-    if (!response.ok) throw new Error('Impossible de vérifier la session');
-    const data = await response.json();
-    return data.csrf_token;
-}
+/* Accueil : le formulaire existant est intégré à la nouvelle expérience de Noël. */
+document.addEventListener("DOMContentLoaded",()=>{
+  const button=(id,callback)=>document.getElementById(id).addEventListener("click",callback);
+  function navigate(id){clearMessage("formMessage");clearMessage("loginMessage");showSection(id);}
+  button("join",()=>navigate("register"));
+  button("already",()=>navigate("login"));
+  document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.back)));
+  button("waitingReturn",()=>navigate("welcome"));
+  button("waitingLogout",logout);
 
-// Secret Santa - Login/Register
-
-const API_BASE = '../api';
-
-// Créer les flocons de neige
-function createSnowflakes() {
-    const container = document.getElementById('snowflakes');
-    if (!container) return;
-    
-    for (let i = 0; i < 20; i++) {
-        const snowflake = document.createElement('div');
-        snowflake.className = 'snowflake';
-        snowflake.innerHTML = '❄️';
-        snowflake.style.left = Math.random() * 100 + '%';
-        snowflake.style.animationDuration = (10 + Math.random() * 10) + 's';
-        snowflake.style.animationDelay = Math.random() * 5 + 's';
-        snowflake.style.fontSize = (10 + Math.random() * 20) + 'px';
-        container.appendChild(snowflake);
+  const register=document.getElementById("registerForm");
+  register.addEventListener("submit",async event=>{
+    event.preventDefault();
+    clearMessage("formMessage");
+    const firstName=document.getElementById("register-name");
+    const email=document.getElementById("register-email");
+    const password=document.getElementById("register-password");
+    if(!firstName.value.trim()||firstName.value.trim().length>100){
+      firstName.focus();showMessage("Indiquez votre prénom (100 caractères maximum).");return;
     }
-}
+    if(!email.checkValidity()){email.focus();showMessage("Indiquez une adresse e-mail valide.");return;}
+    if(password.value.length<12){password.focus();showMessage("Choisissez un mot de passe d'au moins 12 caractères.");return;}
+    const submit=register.querySelector("[type=submit]");
+    busy(submit,true);
+    try{
+      await apiRequest("/auth.php?action=register",{
+        method:"POST",
+        data:{first_name:firstName.value.trim(),email:email.value.trim(),password:password.value}
+      });
+      register.reset();
+      document.getElementById("waitingText").textContent="Votre demande a bien été envoyée. L'organisateur doit encore confirmer votre participation. Vous pourrez ensuite vous connecter pour ouvrir votre enveloppe.";
+      document.getElementById("waitingLogout").hidden=true;
+      navigate("waiting");
+    }catch(error){showMessage(error.message,"error","formMessage");}
+    finally{busy(submit,false);}
+  });
 
-// Afficher le formulaire de connexion
-function showLogin() {
-    document.getElementById('loginForm').classList.remove('hidden');
-    document.getElementById('registerForm').classList.add('hidden');
-    document.getElementById('formTitle').textContent = 'Connexion';
-    document.getElementById('formDescription').textContent = 'Connectez-vous pour voir votre attribution';
-    
-    const tabs = document.querySelectorAll('.tab');
-    tabs[0].classList.add('active');
-    tabs[1].classList.remove('active');
-}
+  const login=document.getElementById("loginForm");
+  login.addEventListener("submit",async event=>{
+    event.preventDefault();
+    clearMessage("loginMessage");
+    const email=document.getElementById("login-email");
+    const password=document.getElementById("login-password");
+    if(!email.checkValidity()){email.focus();showMessage("Indiquez votre adresse e-mail.","error","loginMessage");return;}
+    if(!password.value){password.focus();showMessage("Indiquez votre mot de passe.","error","loginMessage");return;}
+    const submit=login.querySelector("[type=submit]");
+    busy(submit,true);
+    try{
+      const data=await apiRequest("/auth.php?action=login",{method:"POST",data:{email:email.value.trim(),password:password.value}});
+      password.value="";
+      if(!data.user.is_approved){
+        document.getElementById("waitingText").textContent="Votre compte est créé, mais l'organisateur doit encore accepter votre participation. Vous pourrez revenir ici dès qu'elle aura été confirmée.";
+        document.getElementById("waitingLogout").hidden=false;
+        navigate("waiting");
+      }else{
+        window.location.assign(data.user.is_admin?"admin.html":"user.html");
+      }
+    }catch(error){showMessage(error.message,"error","loginMessage");}
+    finally{busy(submit,false);}
+  });
 
-// Afficher le formulaire d'inscription
-function showRegister() {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('registerForm').classList.remove('hidden');
-    document.getElementById('formTitle').textContent = 'Inscription';
-    document.getElementById('formDescription').textContent = 'Rejoignez le Secret Santa familial';
-    
-    const tabs = document.querySelectorAll('.tab');
-    tabs[0].classList.remove('active');
-    tabs[1].classList.add('active');
-}
-
-// Afficher un message
-function showMessage(text, type = 'success') {
-    const messageEl = document.getElementById('message');
-    messageEl.textContent = text;
-    messageEl.className = `message ${type}`;
-    messageEl.classList.remove('hidden');
-    
-    setTimeout(() => {
-        messageEl.classList.add('hidden');
-    }, 5000);
-}
-
-// Gérer la connexion
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = {
-        email: document.getElementById('login-email').value,
-        password: document.getElementById('login-password').value
-    };
-    
-    try {
-        const response = await fetch(`${API_BASE}/auth.php?action=login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await csrfToken() },
-            body: JSON.stringify(formData)
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            // Rediriger selon le rôle
-            if (data.user.is_admin) {
-                window.location.href = 'admin.html';
-            } else if (data.user.is_approved) {
-                window.location.href = 'user.html';
-            } else {
-                showMessage('Votre compte doit être approuvé par l\'administrateur.', 'warning');
-            }
-        } else {
-            showMessage(data.error || 'Erreur de connexion', 'error');
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        showMessage('Erreur de connexion au serveur', 'error');
+  (async()=>{
+    try{
+      const current=await apiRequest("/auth.php?action=me");
+      if(!current.logged_in)return;
+      const user=current.user;
+      if(user.is_approved)window.location.replace(user.is_admin?"admin.html":"user.html");
+      else{
+        document.getElementById("waitingText").textContent="Votre compte est créé. L'organisateur doit encore accepter votre participation.";
+        document.getElementById("waitingLogout").hidden=false;
+        navigate("waiting");
+      }
+    }catch(error){
+      const warning=document.createElement("p");
+      warning.className="error-fallback";warning.setAttribute("role","alert");
+      warning.textContent="Impossible de vérifier votre connexion pour le moment. Vous pouvez réessayer dans quelques instants.";
+      document.getElementById("welcome").append(warning);
     }
+  })();
 });
-
-// Gérer l'inscription
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = {
-        first_name: document.getElementById('register-name').value,
-        email: document.getElementById('register-email').value,
-        password: document.getElementById('register-password').value
-    };
-    
-    try {
-        const response = await fetch(`${API_BASE}/auth.php?action=register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await csrfToken() },
-            body: JSON.stringify(formData)
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showMessage('Inscription réussie! Votre compte doit être approuvé par l\'administrateur.', 'success');
-            document.getElementById('registerForm').reset();
-            setTimeout(() => showLogin(), 2000);
-        } else {
-            showMessage(data.error || 'Erreur d\'inscription', 'error');
-        }
-    } catch (error) {
-        console.error('Register error:', error);
-        showMessage('Erreur de connexion au serveur', 'error');
-    }
-});
-
-// Initialisation
-createSnowflakes();
