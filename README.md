@@ -29,3 +29,11 @@ Exiger `MONGO_URL`, `DB_NAME` et un `JWT_SECRET` aléatoire d'au moins 32 caract
 ## Développement
 
 La branche d'audit `audit/security-and-simplification` introduit un premier socle de sécurité et documente les limitations de l'existant. Elle ne vaut **pas** validation d'un déploiement en production. La feuille de route est dans [docs/REFONTE.md](docs/REFONTE.md).
+
+## Aider un parent qui a oublié son mot de passe
+
+**Nouveauté Cadeau v3 :** l'organisateur peut ouvrir `Organiser → Participants` puis cliquer sur **Aider à retrouver son mot de passe**. Après confirmation, il obtient un lien privé à transmettre par messagerie ou directement sur l'appareil du parent. Le lien reste valable 30 minutes et ne fonctionne qu'une seule fois. Le parent définit lui-même un nouveau mot de passe ; toutes ses anciennes sessions sont déconnectées. Aucun service SMTP n'est nécessaire. Les comptes organisateurs se récupèrent depuis le terminal privé via `php/bin/reset_admin_password.php`.
+
+Pour une base **déjà existante**, appliquer `php/migrations/001_auth_attempts.sql` puis `php/migrations/002_password_reset.sql` sur une copie restaurable avant de mettre à jour l'application. Pour une base neuve, utiliser le schéma `php/database.sql`.
+
+**Ne pas confondre suppression des fichiers et purge de l'historique Git :** les secrets anciennement publiés doivent être tournés sur l'hébergement, puis purgés de l'historique avec une opération dédiée et coordonnée. Supprimer la branche `main` sans réécrire l'historique de la nouvelle branche ne protège pas les anciens secrets.

@@ -29,3 +29,11 @@ Les anciennes versions ont publié des identifiants. Si ces comptes ont été ut
 Le tirage courant est lié à l'année civile. Il doit contenir chaque participant approuvé exactement une fois, jamais lui-même. Un redémarrage ou rechargement de page ne doit pas modifier les attributions. Une suppression de tirage efface les affectations de l'année et nécessite une confirmation expresse. Sauvegardez la base avant l'opération.
 
 La version PHP existante nécessite encore des tests d'intégration sous MySQL et une revue de déploiement HTTPS avant publication. Voir [../docs/REFONTE.md](../docs/REFONTE.md).
+
+## Mise à jour depuis la version précédente : récupération de mot de passe
+
+Sur une copie de la base **sauvegardée et restaurable**, appliquer `migrations/001_auth_attempts.sql` (si non déjà appliquée), puis `migrations/002_password_reset.sql` (une seule fois). Vérifier les colonnes et tables avant chaque migration ; ne pas appliquer `database.sql` à une base existante sans plan de migration.
+
+L'organisateur peut ensuite générer un lien personnel de réinitialisation depuis l'interface. L'aide n'envoie **aucun e-mail automatiquement** ; le lien est à transmettre directement à la personne concernée. Il expire au bout de 30 minutes, un nouveau lien révoque l'ancien et l'utilisation du lien invalide les sessions existantes.
+
+Les comptes organisateurs ne sont **pas** réinitialisables depuis l'interface. Utiliser `bin/reset_admin_password.php` depuis un terminal PHP privé avec `ADMIN_EMAIL` et `ADMIN_PASSWORD` ; cette procédure requiert la migration 002.

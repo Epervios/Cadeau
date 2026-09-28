@@ -14,7 +14,7 @@ Ce document recense les fonctionnalités effectivement intégrées à la branche
 ## Délibérément hors du périmètre de cette version
 
 - Aucun envoi de courriel automatique ; aucune promesse de notification tant qu'un service SMTP n'a pas été configuré et vérifié.
-- Ni mot de passe oublié ni invitation individuelle à jeton tant qu'un flux de récupération sécurisé n'a pas été développé.
+- La **récupération familiale assistée** est implémentée (voir ci-dessous). Le libre-service par e-mail et les invitations individuelles automatisées restent à développer après configuration SMTP.
 - Ni exclusion entre couples/foyers ni modification de liste après publication d'un tirage.
 - Aucun travail sur la version alternative React/FastAPI : elle demeure dans le dépôt pour compatibilité, mais la cible de livraison est la version PHP/MySQL.
 - Les comptes et tirages présents sur un hébergement réel n'ont pas été lus ni migrés depuis cette branche.

@@ -57,3 +57,7 @@ Aucune personne ne se tire elle-même ; chaque participant est attribué exactem
 ## 6. Périmètre concret de la maquette
 
 `maquette-noel.html` est une **maquette interactive autonome**, non connectée au serveur : quatre vues (« Accueil », « Attente », « Mon cadeau », « Organiser »), navigation clavier, agrandissement de texte et ouverture/fermeture d'une enveloppe fictive. Tous les noms et nombres sont inventés. Elle ne crée aucun compte, n'envoie aucun e-mail et ne procède à aucun tirage réel. Son rôle est de valider visuellement la direction, puis de transposer la composition retenue dans le frontend PHP existant après tests du socle sécurité.
+
+## Mise à jour de la réalisation : aide familiale sans e-mail
+
+La récupération du mot de passe sans serveur SMTP est maintenant implémentée dans la branche de développement, par création d'un lien personnel à usage unique par l'organisateur. Ce lien est valable 30 minutes ; le parent choisit ensuite son propre mot de passe sur un écran lisible. Les invitations automatiques et la récupération autonome par e-mail restent hors du périmètre actuel. Voir [Implémentation v3](IMPLEMENTATION_V3.md).
