@@ -4,6 +4,14 @@ import assert from "node:assert/strict";
 
 const root=new URL("../public/",import.meta.url);
 const file=path=>readFileSync(new URL(path,root),"utf8");
+import { existsSync } from "node:fs";
+for (const name of ["auth", "admin", "user"]) {
+  const wrapper=file("api/"+name+".php");
+  assert.ok(wrapper.includes("../../api/"+name+".php"),"Passerelle PHP publique manquante : "+name);
+}
+const sharedClient=file("js/common.js");
+assert.match(sharedClient,/const API_BASE\s*=\s*["']api["']/,"L'API doit être relative à public/, pas à php/.");
+assert.ok(!existsSync(new URL("config/database.example.php",root)),"La configuration ne doit pas être copiée dans public/.");
 const css=file("css/style.css");
 const common=file("js/common.js");
 const svg=file("assets/christmas-village.svg");

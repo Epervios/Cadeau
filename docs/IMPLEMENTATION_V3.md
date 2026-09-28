@@ -9,7 +9,7 @@
 - `php/public/admin.html`, `js/admin.js` : gestion des participants et du tirage en trois étapes, assistance familiale avec lien privé de récupération et confirmation explicite avant les opérations importantes.
 - `php/public/reset.html`, `js/reset.js` : choix par le participant d'un nouveau mot de passe à partir d'un lien privé à usage unique.
 - `php/public/css/style.css`, `assets/christmas-village.svg` : identité visuelle de Noël, sans polices ni ressources graphiques distantes.
-- `php/public/js/common.js` : accès API même origine avec CSRF, messages d'erreur lisibles et réglage A+ conservé sur l'appareil.
+- `php/public/js/common.js` : accès à `api/` dans la racine publique, même origine avec CSRF, messages d'erreur lisibles et réglage A+ conservé sur l'appareil.
 - `php/api/auth.php`, `admin.php`, `user.php` : contrôle côté serveur de chaque permission, tirage et récupération. Ne pas déduire des droits à partir de l'interface seule.
 - `php/database.sql` et `php/migrations/` : création neuve et évolutions d'une base existante. Ne jamais mélanger ces procédures.
 
@@ -35,3 +35,7 @@ La CI sous `.github/workflows/php-check.yml` vérifie :
 ## Référence de déploiement
 
 [Installation PHP](../php/README_INSTALLATION.md) · [Guide de sécurité et de déploiement](DEPLOIEMENT_SECURISÉ.md)
+
+## Sécurité structurelle de Plesk
+
+La seule racine HTTP admissible est `php/public/`. Le dossier `php/public/api/` contient les passerelles vers le code métier privé `php/api/` ; le serveur ne doit jamais publier `php/config/`, `php/includes/`, `php/bin/`, `php/migrations/` ou `php/database.sql`. Le banc HTTP de la CI effectue un contrôle 403/404 explicite de ces chemins. 

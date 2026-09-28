@@ -1,41 +1,31 @@
-# Cadeau v3 — Déploiement et sécurité
+# Cadeau v3 — Déploiement sécurisé sur Plesk + Cloudflare
 
-## Ne pas déployer sans préparation
+## Isolation des fichiers par le serveur Web
 
-Une mise à jour du dépôt GitHub ne remplace **pas** l'installation sur l'hébergement. Conserver une sauvegarde SQL et des fichiers, la **restaurer sur un environnement de test**, puis valider les migrations et l'application sur cette copie.
+**Seul `php/public/` est une racine HTTP valide** : une requête à `/config/database.example.php`, `/includes/functions.php`, `/bin/bootstrap_admin.php`, `/database.sql` ou `/migrations/002_password_reset.sql` doit échouer en **403 ou 404**. Ces fichiers résident un niveau au-dessus de la racine publiée et n'ont donc aucun chemin URL direct.
 
-Des identifiants SQL et administrateur ont été publiés dans les toutes premières versions de ce dépôt. Les remplacer sur l'hébergement et partout où ils ont été réutilisés ; analyser les journaux d'accès. Le nettoyage de la branche actuelle ne purge pas les commits anciens. Ne jamais confondre suppression des fichiers, rotation effective des secrets et éventuelle réécriture coordonnée de l'historique Git.
+L'ancienne configuration avec racine `php/` autorisait potentiellement l'exécution directe de scripts privés (observé : HTTP 200 sur `/config/database.example.php`). Même si ce dernier n'affichait rien, cela ne prouvait aucune protection. Sur Plesk, PHP peut être exécuté par nginx sans passer par les directives Apache `.htaccess`. La séparation physique est obligatoire et les contrôles 403/404 sont requis avant d'insérer un mot de passe SQL.
 
-## Arborescence Apache actuelle
+**Plesk :** dépôt GitHub `Epervios/Cadeau` branche `main`, déploiement manuel dans `/noel.wizardaring.ch`, racine du document `noel.wizardaring.ch/php/public`. Ne pas copier les dossiers `config/`, `api/`, `bin/`, `includes/`, `migrations/` ni le schéma SQL dans `public/`.
 
-L'application est autonome dans `php/`. La configuration `php/.htaccess` est écrite pour **servir `php/` comme racine d'application**, conserver `/public/` pour les pages et les ressources, et `/api/` pour les trois points d'entrée PHP.
+Le dossier `public/api/` contient trois **passerelles d'entrée** : `auth.php`, `admin.php`, `user.php`. Les véritables implémentations PHP sont dans le dossier `php/api/` (privé) et accèdent à la configuration `php/config/` par des chemins absolus calculés avec `__DIR__`. Le JavaScript du navigateur utilise `api/` relatif à la racine publique.
 
-L'hébergeur doit activer `mod_rewrite` et permettre la lecture des règles `.htaccess`. Vérifier explicitement depuis l'extérieur que les URL pointant vers `/config/`, `/includes/`, `/bin/`, `/migrations/`, les fichiers `.env`, `.git` et `/database.sql` renvoient 403 ou 404. Si la racine Apache ne peut pas être protégée, déplacer les dossiers privés **hors du répertoire publié** et adapter les chemins des points d'entrée avant d'ouvrir le site.
+## TLS et Cloudflare
 
-Activer HTTPS (et sa redirection côté hébergeur). Contrôler le comportement des cookies `Secure` derrière un éventuel reverse proxy. Activer HSTS seulement après validation de l'ensemble du domaine.
+Un certificat d'origine valide doit couvrir `noel.wizardaring.ch`. Activer la redirection HTTPS en Plesk ; utiliser Cloudflare Full (strict) seulement après avoir validé le certificat d'origine. Ne jamais mettre en cache `/api/*` ou les réponses personnalisées ; les API émettent `Cache-Control: no-store`. Vérifier séparément les autres sous-domaines avant toute modification d'une règle Cloudflare globale.
 
-## Configuration et création des comptes
+## Base neuve ou migration
 
-Ne jamais suivre `php/config/database.php` dans Git. Le modèle `php/config/database.example.php` utilise notamment `CADEAU_DB_PASSWORD` pour le secret SQL. Éviter de journaliser les secrets et ne jamais publier les scripts de `php/bin/` comme pages web.
+Installation neuve dans la base vide `cadeau` : importer **seulement** `php/database.sql`. Les migrations 001 et 002 sont déjà incluses ; ne pas les rejouer. Préférer des droits minimaux pour l'utilisateur SQL `cadeau_admin`. Conserver le mot de passe uniquement sur l'hébergement, dans la configuration privée ou une variable d'environnement sûre.
 
-Sur une **installation neuve**, importer `php/database.sql` dans une base vide, puis créer l'organisateur en privé avec `php/bin/bootstrap_admin.php`.
+Installation existante : sauvegarde restaurable et migrations 001/002 uniquement si manquantes, après contrôle de schéma sur une copie. La récupération du mot de passe familial requiert `users.auth_version` et `password_reset_tokens`.
 
-Sur une **installation existante**, ne pas importer le schéma complet. Vérifier les colonnes, index et clés étrangères sur une copie de la sauvegarde, puis appliquer seulement les migrations absentes dans l'ordre :
-- `php/migrations/001_auth_attempts.sql` : limitation des essais de connexion ;
-- `php/migrations/002_password_reset.sql` : récupération familiale et invalidation des sessions précédentes.
+Le premier organisateur est initialisé via `php/bin/bootstrap_admin.php` uniquement en terminal privé. **Ne jamais créer de page Web d'initialisation administrative.** En cas d'absence de terminal dans Plesk, utiliser les fonctions de maintenance de l'hébergeur plutôt qu'exposer un script SQL/PHP sur le site.
 
-Les migrations 001 et 002 ne doivent pas être rejouées sans vérification préalable. Toute session créée avant la migration 002 devra se reconnecter. La récupération de l'organisateur lui-même se fait **uniquement depuis un terminal privé** avec `php/bin/reset_admin_password.php`.
+## Avant la mise en ligne
 
-## Validation fonctionnelle préalable
+Lancer les tests unitaires/HTTP sur GitHub et vérifier le dernier workflow ; le banc HTTP doit démarrer avec `-t php/public` et refuser les chemins privés tout en acceptant `/api/auth.php?action=csrf`.
 
-Exécuter les tests automatisés décrits dans [l'inventaire des fonctions](IMPLEMENTATION_V3.md). Sur l'hébergement d'essai, vérifier en particulier la confidentialité d'un destinataire : un participant non approuvé ne doit pas accéder au résultat, le clic sur « Ouvrir mon enveloppe » doit être nécessaire et la fermeture doit effacer le nom affiché. Une panne réseau doit afficher une erreur et non un faux « pas de tirage ».
+Contrôler en HTTP réel la protection des répertoires, le chemin HTTPS via Cloudflare et l'absence de cache sur les résultats. Effectuer un essai avec plusieurs comptes fictifs : approbation, impossibilité de voir le cadeau d'un autre, tirage stable et unique, récupération de mot de passe et révocation des sessions.
 
-Vérifier l'absence de second tirage accidentel, la confirmation de réinitialisation, l'impossibilité de changer les participants une fois le tirage publié et la persistance des données après un redémarrage.
-
-La récupération familiale fonctionne **sans SMTP** : l'organisateur transmet le lien lui-même au parent après avoir vérifié son destinataire. Le lien est valable 30 minutes et à usage unique. Le jeton est transmis dans un fragment `#token` qui n'est pas envoyé à Apache dans la requête HTTP initiale, puis est retiré de l'URL affichée par la page de réinitialisation. Un mauvais partage du lien reste un risque humain.
-
-## Acceptation utilisateur et retour arrière
-
-Faire essayer l'application à au moins une personne âgée volontaire sur un smartphone, avec textes normaux et agrandis, clavier si pertinent et zoom du navigateur à 200 %. Vérifier lisibilité, compréhension de chaque bouton, progression des formulaires et absence de piège à l'ouverture de l'enveloppe.
-
-Documenter les versions PHP et MySQL réelles ainsi que la stratégie de restauration avant remplacement de la production. Aucune migration ou mise à jour du dépôt ne constitue, seule, un feu vert pour le déploiement.
+Les secrets des versions historiques publiées dans GitHub restent compromis tant qu'ils ne sont pas effectivement changés. Le nettoyage du dépôt actuel n'efface pas l'historique Git : sa purge éventuelle constitue une opération distincte.

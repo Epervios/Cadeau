@@ -80,7 +80,7 @@ jobs:
           sed -i "s/DB_NAME', 'cadeau'/DB_NAME', 'cadeau_test'/" php/config/database.php
           sed -i "s/DB_USER', 'cadeau_admin'/DB_USER', 'root'/" php/config/database.php
           php php/bin/bootstrap_admin.php
-          php -S 127.0.0.1:8765 -t php >/tmp/cadeau-local-php.log 2>&1 &
+          php -S 127.0.0.1:8765 -t php/public >/tmp/cadeau-local-php.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
