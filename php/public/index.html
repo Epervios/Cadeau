@@ -1,73 +1,78 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secret Santa - Accueil</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="snowflakes" id="snowflakes"></div>
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light"><title>Bienvenue — Cadeau</title>
+<link rel="stylesheet" href="css/style.css">
+<script defer src="js/common.js"></script><script defer src="js/app.js"></script>
+</head><body><a class="skip" href="#contenu">Aller au contenu</a>
+<div class="site">
+<header class="site-head">
+  <span class="brand">✦ CADEAU · NOËL EN FAMILLE ✦</span>
+  <div class="head-actions">
     
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <span class="gift-icon">🎁</span>
-                <span class="sparkle-icon">✨</span>
-            </div>
-            <h1 class="title">Secret Santa</h1>
-            <p class="subtitle">Tirage au sort familial pour Noël</p>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h2 id="formTitle">Connexion</h2>
-                <p id="formDescription">Connectez-vous pour voir votre attribution</p>
-            </div>
-            
-            <div class="tabs">
-                <button class="tab active" onclick="showLogin()">Connexion</button>
-                <button class="tab" onclick="showRegister()">Inscription</button>
-            </div>
-
-            <!-- Formulaire de connexion -->
-            <form id="loginForm" class="form">
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" name="email" placeholder="votre@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Mot de passe</label>
-                    <input type="password" id="login-password" name="password" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Se connecter</button>
-            </form>
-
-            <!-- Formulaire d'inscription -->
-            <form id="registerForm" class="form hidden">
-                <div class="form-group">
-                    <label for="register-name">Prénom</label>
-                    <input type="text" id="register-name" name="first_name" placeholder="Jean" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-email">Email</label>
-                    <input type="email" id="register-email" name="email" placeholder="votre@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-password">Mot de passe</label>
-                    <input type="password" id="register-password" name="password" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="btn btn-success">S'inscrire</button>
-            </form>
-
-            <div id="message" class="message hidden"></div>
-        </div>
-
-        <p class="footer">🎄 Joyeux Noël! 🎅</p>
-    </div>
-
-    <script src="js/app.js"></script>
-</body>
-</html>
+    <button id="larger" type="button" aria-pressed="false">Agrandir le texte A+</button>
+  </div>
+</header>
+<main class="sheet" id="contenu">
+<div class="hero">
+  <img class="village" src="assets/christmas-village.svg" alt="" width="1000" height="360">
+  <div class="hero-heading">
+    <div class="eyebrow">✦ Notre Noël en famille ✦</div>
+    <h1>La magie des cadeaux</h1>
+    <p>Un prénom, une surprise, un beau moment à partager.</p>
+  </div>
+</div>
+<section class="page center" id="welcome" aria-labelledby="welcome-title">
+  <div class="paper">
+    <div class="holly" aria-hidden="true">❦</div>
+    <h2 id="welcome-title" tabindex="-1">Bienvenue à notre Noël&nbsp;!</h2>
+    <p class="lead">Cette année, chacun offre un cadeau à une personne tirée au sort. Et le plus amusant&nbsp;? Garder le secret jusqu'à Noël&nbsp;!</p>
+    <button type="button" class="cta" id="join">Je participe au tirage</button>
+    <button type="button" class="ghost" id="already">J'ai déjà participé</button>
+  </div>
+  <p class="helper">Vous n'avez rien à installer. Tout se fait simplement depuis votre téléphone ou votre ordinateur.</p>
+</section>
+<section class="page center" id="register" aria-labelledby="register-title" hidden>
+  <div class="paper">
+    <div class="holly" aria-hidden="true">❦</div>
+    <h2 id="register-title" tabindex="-1">Je participe à notre Noël</h2>
+    <p>Remplissez simplement ces trois informations.</p>
+    <form id="registerForm" class="form" novalidate>
+      <div class="field"><label for="register-name">Votre prénom</label><input id="register-name" type="text" autocomplete="given-name" maxlength="100" required></div>
+      <div class="field"><label for="register-email">Votre adresse e-mail</label><input id="register-email" type="email" autocomplete="email" inputmode="email" required></div>
+      <div class="field"><label for="register-password">Choisissez un mot de passe</label><input id="register-password" type="password" autocomplete="new-password" minlength="12" required><p class="hint">Au moins 12 caractères. Vous pourrez l'enregistrer sur votre appareil.</p></div>
+      <button type="submit" class="cta">Enregistrer ma participation</button>
+    </form>
+    <div class="form-message" id="formMessage" hidden aria-live="polite"></div>
+    <button class="back-link" type="button" data-back="welcome">Retour à l'accueil</button>
+  </div>
+</section>
+<section class="page center" id="login" aria-labelledby="login-title" hidden>
+  <div class="paper">
+    <div class="holly" aria-hidden="true">✦</div>
+    <h2 id="login-title" tabindex="-1">Ravi de vous retrouver&nbsp;!</h2>
+    <p>Connectez-vous pour consulter votre surprise de Noël.</p>
+    <form id="loginForm" class="form" novalidate>
+      <div class="field"><label for="login-email">Votre adresse e-mail</label><input id="login-email" type="email" autocomplete="username" inputmode="email" required></div>
+      <div class="field"><label for="login-password">Votre mot de passe</label><input id="login-password" type="password" autocomplete="current-password" required></div>
+      <button type="submit" class="cta">Me connecter</button>
+    </form>
+    <button class="ghost" id="forgot" type="button" aria-expanded="false" aria-controls="forgotHelp">J'ai oublié mon mot de passe</button>
+    <p class="helper" id="forgotHelp" hidden role="status">Pas de panique&nbsp;! Demandez à l'organisateur de votre Noël un lien pour choisir un nouveau mot de passe. Il pourra vous l'envoyer directement.</p>
+    <div class="form-message" id="loginMessage" hidden aria-live="polite"></div>
+    <button class="back-link" type="button" data-back="welcome">Retour à l'accueil</button>
+  </div>
+</section>
+<section class="page center" id="waiting" aria-labelledby="waiting-title" hidden>
+  <div class="paper">
+    <div class="big-icon" aria-hidden="true">🎄</div>
+    <h2 id="waiting-title" tabindex="-1">Votre participation est enregistrée&nbsp;!</h2>
+    <p class="lead" id="waitingText">L'organisateur doit encore confirmer votre participation.</p>
+    <div class="steps"><div class="step"><span class="num" aria-hidden="true">✓</span><span>Vous avez demandé à participer</span></div>
+      <div class="step pending"><span class="num" aria-hidden="true">2</span><span>L'organisateur valide les inscriptions</span></div>
+      <div class="step pending"><span class="num" aria-hidden="true">3</span><span>Vous pourrez ouvrir votre enveloppe après le tirage</span></div></div>
+    <button class="secondary" type="button" id="waitingReturn">Retour à l'accueil</button>
+    <button class="back-link" type="button" id="waitingLogout" hidden>Me déconnecter</button>
+  </div>
+</section>
+<footer class="footer">Une carte de Noël qui prend vie · La magie d'être ensemble ✦</footer>
+</main></div></body></html>

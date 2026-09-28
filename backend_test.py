@@ -1,11 +1,14 @@
 import requests
+import os
 import sys
 import json
 from datetime import datetime
 
 class SecretSantaAPITester:
-    def __init__(self, base_url="https://family-draw-system.preview.emergentagent.com/api"):
-        self.base_url = base_url
+    def __init__(self, base_url=None):
+        self.base_url = base_url or os.environ.get("TEST_API_URL", "http://127.0.0.1:8001/api")
+        self.admin_email = os.environ.get("TEST_ADMIN_EMAIL")
+        self.admin_password = os.environ.get("TEST_ADMIN_PASSWORD")
         self.admin_token = None
         self.user_token = None
         self.test_user_id = None
@@ -59,14 +62,16 @@ class SecretSantaAPITester:
 
     def test_admin_login(self):
         """Test admin login"""
+        if not self.admin_email or not self.admin_password:
+            raise RuntimeError("Configurer TEST_ADMIN_EMAIL et TEST_ADMIN_PASSWORD avant les tests d'intégration.")
         success, response = self.run_test(
             "Admin Login",
             "POST",
             "auth/login",
             200,
             data={
-                "email": "eric.savary@netplus.ch",
-                "password": "x4Q45jUn7Hxq4M"
+                "email": self.admin_email,
+                "password": self.admin_password
             }
         )
         if success and 'token' in response:

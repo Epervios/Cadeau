@@ -1,0 +1,83 @@
+name: Cadeau PHP verification
+on:
+  pull_request:
+  push:
+    branches: [main, audit/security-and-simplification]
+
+jobs:
+  syntax-and-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PHP 8.3 CLI
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y php8.3-cli
+      - name: Syntax of all PHP source files
+        run: |
+          set -eu
+          find php -type f -name '*.php' ! -path 'php/config/database.php' -print0 | xargs -0 -n1 php -l
+      - name: Validate JavaScript sources syntax
+        run: |
+          set -eu
+          for f in php/public/js/*.js; do node --check "$f"; done
+      - name: Validate integration shell syntax
+        run: bash -n php/tests/http-integration.sh
+      - name: Validate the real Christmas interface structure
+        run: node php/tests/ui-static.mjs
+      - name: Unit test of Secret Santa draw
+        run: php php/tests/unit.php
+      - name: Reject accidentally committed local configurations
+        run: |
+          set -eu
+          for f in php/config/database.php php/test_connection.php php/generate_admin_password.php backend/.env frontend/.env; do
+            if test -f "$f"; then
+              echo "::error file=$f::Do not commit local secrets or diagnostics"
+              exit 1
+            fi
+          done
+  schema-smoke:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: localtestonly
+          MARIADB_DATABASE: cadeau_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MariaDB client and PHP runtime
+        run: sudo apt-get update -qq && sudo apt-get install -y mariadb-client php8.3-cli php8.3-mysql jq curl
+      - name: Validate clean schema
+        env:
+          MYSQL_PWD: localtestonly
+        run: |
+          mariadb -h 127.0.0.1 -u root cadeau_test < php/database.sql
+          mariadb -h 127.0.0.1 -u root cadeau_test -e "SHOW TABLES; SHOW INDEX FROM assignments;"
+      - name: Local HTTP integration tests
+        env:
+          MYSQL_PWD: localtestonly
+          CADEAU_DB_PASSWORD: localtestonly
+          ADMIN_EMAIL: admin@example.test
+          ADMIN_FIRST_NAME: Organisateur
+          ADMIN_PASSWORD: local-test-admin-password-only
+        run: |
+          set -euo pipefail
+          cp php/config/database.example.php php/config/database.php
+          sed -i "s/DB_HOST', 'localhost'/DB_HOST', '127.0.0.1'/" php/config/database.php
+          sed -i "s/DB_NAME', 'cadeau'/DB_NAME', 'cadeau_test'/" php/config/database.php
+          sed -i "s/DB_USER', 'cadeau_admin'/DB_USER', 'root'/" php/config/database.php
+          php php/bin/bootstrap_admin.php
+          php -S 127.0.0.1:8765 -t php >/tmp/cadeau-local-php.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8765/api/auth.php?action=csrf >/dev/null; then break; fi
+            sleep 1
+          done
+          bash php/tests/http-integration.sh

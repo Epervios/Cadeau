@@ -1,78 +1,88 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secret Santa - Admin Dashboard</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="admin-header">
-        <div class="admin-header-content">
-            <div class="admin-title">
-                <span class="gift-icon">🎁</span>
-                <div>
-                    <h1>Admin Dashboard</h1>
-                    <p id="adminWelcome">Bienvenue</p>
-                </div>
-            </div>
-            <button onclick="logout()" class="btn btn-outline">Déconnexion</button>
-        </div>
-    </div>
-
-    <div class="container admin-container">
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Participants approuvés</h3>
-                <p class="stat-number" id="approvedCount">0</p>
-            </div>
-            <div class="stat-card">
-                <h3>En attente</h3>
-                <p class="stat-number" id="pendingCount">0</p>
-            </div>
-            <div class="stat-card">
-                <h3>Année <span id="currentYear">2025</span></h3>
-                <p class="stat-badge" id="drawStatus">Pas de tirage</p>
-            </div>
-        </div>
-
-        <!-- Section Tirage -->
-        <div class="card">
-            <div class="card-header">
-                <h2>✨ Tirage au sort Secret Santa</h2>
-                <p>Lancez le tirage pour l'année en cours. Chaque participant sera assigné secrètement.</p>
-            </div>
-            <div class="card-body">
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <button id="createDrawBtn" onclick="createDraw()" class="btn btn-success">Lancer le tirage</button>
-                    <button id="resetDrawBtn" onclick="resetDraw()" class="btn btn-danger" style="display: none;">🔄 Réinitialiser le tirage</button>
-                </div>
-                <p id="drawWarning" class="warning hidden">⚠️ Minimum 2 participants approuvés requis</p>
-                <p id="drawInfo" class="info-text hidden" style="margin-top: 1rem; color: #059669;">ℹ️ Si le tirage s'est mal passé, vous pouvez le réinitialiser et le relancer.</p>
-            </div>
-        </div>
-
-        <!-- Utilisateurs en attente -->
-        <div id="pendingSection" class="card hidden">
-            <div class="card-header">
-                <h2>Demandes en attente</h2>
-                <p>Approuvez ou rejetez les nouvelles inscriptions</p>
-            </div>
-            <div id="pendingList" class="user-list"></div>
-        </div>
-
-        <!-- Tous les utilisateurs -->
-        <div class="card">
-            <div class="card-header">
-                <h2>Tous les utilisateurs (<span id="totalUsers">0</span>)</h2>
-            </div>
-            <div id="userList" class="user-list"></div>
-        </div>
-    </div>
-
-    <div id="message" class="message-toast hidden"></div>
-    <script src="js/admin.js"></script>
-</body>
-</html>
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light"><title>Organiser notre Noël — Cadeau</title>
+<link rel="stylesheet" href="css/style.css">
+<script defer src="js/common.js"></script><script defer src="js/admin.js"></script>
+</head><body><a class="skip" href="#contenu">Aller au contenu</a>
+<div class="site">
+<header class="site-head">
+  <span class="brand">✦ CADEAU · NOËL EN FAMILLE ✦</span>
+  <div class="head-actions">
+    <button type="button" class="logout-button" id="logout">Me déconnecter</button>
+    <button id="larger" type="button" aria-pressed="false">Agrandir le texte A+</button>
+  </div>
+</header>
+<main class="sheet" id="contenu">
+<div class="hero">
+  <img class="village" src="assets/christmas-village.svg" alt="" width="1000" height="360">
+  <div class="hero-heading">
+    <div class="eyebrow">✦ Notre Noël en famille ✦</div>
+    <h1>La magie des cadeaux</h1>
+    <p>Un prénom, une surprise, un beau moment à partager.</p>
+  </div>
+</div>
+<section class="page" id="organizer" aria-labelledby="admin-title">
+ <div class="paper wide">
+  <div class="holly" aria-hidden="true">❦</div>
+  <h2 id="admin-title" tabindex="-1" class="center">Préparons notre Noël</h2>
+  <p class="lead center">Tout pour organiser le tirage en trois étapes simples.</p>
+  <div class="form-message" id="formMessage" hidden aria-live="polite"></div>
+  <div class="stat-row" aria-label="État des inscriptions">
+    <div class="stat"><strong id="approvedCount">–</strong><span>Inscrits</span></div>
+    <div class="stat"><strong id="pendingCount">–</strong><span>En attente</span></div>
+    <div class="stat"><strong id="year">–</strong><span>Année du tirage</span></div>
+  </div>
+  <div class="admin-steps">
+   <section class="admin-step" aria-labelledby="step1"><span class="number" aria-hidden="true">1</span><div class="inner">
+    <h3 id="step1">Vérifier les participants</h3><p>Acceptez ou refusez les nouvelles demandes avant le tirage.</p>
+    <p id="pendingEmpty" class="info-banner" hidden>Toutes les demandes ont été traitées.</p>
+    <ul id="pendingList" class="people-list" aria-label="Demandes en attente"></ul>
+    <h3 class="spaced">Participants confirmés</h3>
+    <ul id="approvedList" class="people-list" aria-label="Participants confirmés"></ul>
+   </div></section>
+   <section class="admin-step" aria-labelledby="step2"><span class="number" aria-hidden="true">2</span><div class="inner">
+    <h3 id="step2">Préparer le tirage</h3>
+    <p id="preflight">Vérification des inscriptions en cours…</p>
+    <p class="info-banner">Important : le compte organisateur participe aussi au tirage s'il est approuvé.</p>
+   </div></section>
+   <section class="admin-step" aria-labelledby="step3"><span class="number" aria-hidden="true">3</span><div class="inner">
+    <h3 id="step3">Lancer le tirage</h3>
+    <p id="drawStatus">Vérification de l'état du tirage…</p>
+    <button class="cta" type="button" id="createDrawBtn" disabled>Lancer le tirage</button>
+    <button class="secondary" type="button" id="resetDrawBtn" hidden>Réinitialiser le tirage</button>
+    <a href="user.html" class="back-link">Voir mon enveloppe</a>
+   </div></section>
+  </div>
+  <button class="secondary" id="reloadData" type="button">Actualiser les informations</button>
+ </div>
+</section>
+<footer class="footer">Une carte de Noël qui prend vie · La magie d'être ensemble ✦</footer>
+</main></div>
+<dialog id="drawDialog" aria-labelledby="drawDialogTitle">
+ <h2 id="drawDialogTitle">Tout est prêt pour Noël&nbsp;?</h2>
+ <p id="drawDialogInfo"></p>
+ <p>Une fois le tirage lancé, chaque personne pourra découvrir son destinataire. Vérifiez que la liste est complète.</p>
+ <div class="dialog-actions"><button type="button" class="cancel" id="cancelDraw">Annuler</button><button type="button" id="confirmDraw">Oui, lancer le tirage</button></div>
+</dialog>
+<dialog id="resetDialog" aria-labelledby="resetDialogTitle">
+ <h2 id="resetDialogTitle">Réinitialiser le tirage</h2>
+ <p>Attention&nbsp;: toutes les attributions changeront. Ne faites ceci qu'en cas de nécessité, après avoir prévenu votre famille.</p>
+ <div class="field"><label id="yearLabel" for="confirmYear">Pour confirmer, écrivez l'année du tirage</label><input id="confirmYear" type="number" inputmode="numeric" min="2000" max="2100"></div>
+ <div class="form-message" id="resetMessage" hidden aria-live="polite"></div>
+ <div class="dialog-actions"><button type="button" class="cancel" id="cancelReset">Annuler</button><button type="button" id="confirmReset">Confirmer la réinitialisation</button></div>
+</dialog>
+<dialog id="helpDialog" aria-labelledby="helpTitle">
+  <h2 id="helpTitle">Aider un proche à retrouver son accès</h2>
+  <p id="helpDescription">Ce lien personnel permettra de choisir un nouveau mot de passe. Il n'affiche aucun destinataire.</p>
+  <p><strong>Valable 30 minutes, une seule utilisation.</strong> Ne l'envoyez qu'à la personne concernée.</p>
+  <div class="field">
+    <label for="resetShareLink">Lien personnel à transmettre</label>
+    <input type="text" id="resetShareLink" readonly autocomplete="off" spellcheck="false">
+  </div>
+  <div class="form-message" id="copyHelp" aria-live="polite" hidden></div>
+  <div class="dialog-actions">
+    <button id="copyResetLink" type="button">Copier le lien</button>
+    <button class="cancel" id="closeHelp" type="button">Fermer</button>
+  </div>
+</dialog>
+</body></html>

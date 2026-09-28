@@ -1,246 +1,184 @@
-// Secret Santa - Admin Dashboard
+/* Organisateur : rendu DOM sûr, trois étapes lisibles et confirmations explicites. */
+document.addEventListener("DOMContentLoaded",()=>{
+  const byId=id=>document.getElementById(id);
+  const year=new Date().getFullYear();
+  const drawDialog=byId("drawDialog"),resetDialog=byId("resetDialog");
+  let approved=[],pending=[],draw={has_draw:false};
+  let loading=false;
 
-const API_BASE = '../api';
+  byId("year").textContent=String(year);
+  byId("logout").addEventListener("click",logout);
+  byId("reloadData").addEventListener("click",loadData);
+  byId("cancelDraw").addEventListener("click",()=>drawDialog.close());
+  byId("cancelReset").addEventListener("click",()=>resetDialog.close());
 
-let allUsers = [];
-let pendingUsers = [];
-let drawStatus = {};
-
-// Charger les données
-async function loadData() {
-    try {
-        const [usersRes, pendingRes, statusRes] = await Promise.all([
-            fetch(`${API_BASE}/admin.php?action=users`),
-            fetch(`${API_BASE}/admin.php?action=pending-users`),
-            fetch(`${API_BASE}/user.php?action=draw-status`)
-        ]);
-        
-        if (!usersRes.ok || !pendingRes.ok || !statusRes.ok) {
-            // Non authentifié ou non autorisé
-            window.location.href = 'index.html';
-            return;
-        }
-        
-        allUsers = await usersRes.json();
-        pendingUsers = await pendingRes.json();
-        drawStatus = await statusRes.json();
-        
-        updateUI();
-    } catch (error) {
-        console.error('Load error:', error);
-        showToast('Erreur de chargement des données', 'error');
+  function personRow(person,awaiting){
+    const li=document.createElement("li");li.className="person";
+    const info=document.createElement("div");
+    const name=document.createElement("span");name.className="person-name";name.textContent=person.first_name||"Participant";
+    const email=document.createElement("span");email.className="person-mail";email.textContent=person.email||"";
+    info.append(name,email);li.append(info);
+    if(awaiting){
+      const buttons=document.createElement("div");buttons.className="person-buttons";
+      for(const [action,label,danger] of [["approve-user","Accepter",false],["reject-user","Refuser",true]]){
+        const button=document.createElement("button");
+        button.type="button";button.textContent=label;
+        if(danger)button.classList.add("danger");
+        button.disabled=!!draw.has_draw;
+        button.setAttribute("aria-label",label+" la demande de "+(person.first_name||"ce participant"));
+        button.addEventListener("click",()=>changeParticipant(person,action,button));
+        buttons.append(button);
+      }
+      li.append(buttons);
     }
-}
+    if(Number(person.is_admin)!==1){
+      const actions=document.createElement("div");actions.className="person-buttons";
+      const reset=document.createElement("button");reset.type="button";
+      reset.className="help-account";
+      reset.textContent="Aider à retrouver son mot de passe";
+      reset.setAttribute("aria-label","Préparer un lien de réinitialisation pour "+(person.first_name||"ce participant"));
+      reset.addEventListener("click",()=>generatePasswordReset(person,reset));
+      actions.append(reset);li.append(actions);
+    }
+    return li;
+  }
+  function render(){
+    byId("approvedCount").textContent=String(approved.length);
+    byId("pendingCount").textContent=String(pending.length);
+    byId("pendingEmpty").hidden=pending.length>0;
+    byId("pendingList").replaceChildren(...pending.map(p=>personRow(p,true)));
+    byId("approvedList").replaceChildren(...approved.map(p=>personRow(p,false)));
+    let preflight,status;
+    if(draw.has_draw){
+      preflight="Le tirage de "+year+" est déjà effectué. La liste est verrouillée.";
+      status="Le tirage a déjà été réalisé. Chaque personne peut consulter son enveloppe.";
+    }else if(pending.length){
+      preflight=pending.length+" inscription(s) à traiter avant de lancer le tirage.";
+      status="Vous pourrez lancer le tirage une fois toutes les inscriptions vérifiées.";
+    }else if(approved.length<2){
+      preflight="Il faut au moins deux personnes confirmées pour un tirage.";
+      status="En attente d'autres participants.";
+    }else{
+      preflight="Tout est prêt : "+approved.length+" personnes confirmées et aucune inscription en attente.";
+      status="Chaque personne recevra exactement un destinataire, différent d'elle-même.";
+    }
+    byId("preflight").textContent=preflight;
+    byId("drawStatus").textContent=status;
+    byId("createDrawBtn").disabled=loading||draw.has_draw||pending.length>0||approved.length<2;
+    byId("createDrawBtn").hidden=!!draw.has_draw;
+    byId("resetDrawBtn").hidden=!draw.has_draw;
+    byId("resetDrawBtn").disabled=loading;
+  }
+  async function loadData(){
+    if(loading)return;
+    loading=true;byId("reloadData").disabled=true;clearMessage();
+    try{
+      const me=await apiRequest("/auth.php?action=me");
+      if(!me.logged_in||!me.user.is_approved||!me.user.is_admin){
+        window.location.replace("index.html");return;
+      }
+      const [users,requests,status]=await Promise.all([
+        apiRequest("/admin.php?action=users"),
+        apiRequest("/admin.php?action=pending-users"),
+        apiRequest("/user.php?action=draw-status")
+      ]);
+      approved=users.filter(p=>Number(p.is_approved)===1);
+      pending=requests;
+      draw=status;
+    }catch(error){
+      showMessage("Impossible de charger la liste : "+error.message);
+      byId("createDrawBtn").disabled=true;
+      byId("resetDrawBtn").disabled=true;
+      return;
+    }finally{
+      loading=false;byId("reloadData").disabled=false;
+    }
+    render();
+  }
+  async function changeParticipant(person,action,button){
+    if(draw.has_draw)return;
+    if(action==="reject-user"&&!window.confirm("Refuser la participation de "+person.first_name+" ?"))return;
+    clearMessage();busy(button,true);
+    try{
+      const id=Number(person.id);
+      if(!Number.isSafeInteger(id)||id<1)throw new Error("Identifiant du participant invalide.");
+      await apiRequest("/admin.php?action="+action+"&user_id="+id,{method:"POST",data:{}});
+      await loadData();
+      showMessage(action==="approve-user"?"Participation acceptée.":"Inscription refusée.","success");
+    }catch(error){showMessage(error.message);}
+    finally{if(button.isConnected)busy(button,false);}
+  }
 
-// Mettre à jour l'interface
-function updateUI() {
-    const approvedUsers = allUsers.filter(u => u.is_approved);
-    
-    // Stats
-    document.getElementById('approvedCount').textContent = approvedUsers.length;
-    document.getElementById('pendingCount').textContent = pendingUsers.length;
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
-    
-    const statusBadge = document.getElementById('drawStatus');
-    if (drawStatus.has_draw) {
-        statusBadge.textContent = 'Tirage effectué';
-        statusBadge.style.background = '#16a34a';
-        document.getElementById('createDrawBtn').disabled = true;
-        document.getElementById('createDrawBtn').textContent = 'Tirage déjà effectué';
-    } else {
-        statusBadge.textContent = 'Pas de tirage';
-        statusBadge.style.background = '#9ca3af';
+  const helpDialog=byId("helpDialog");
+  helpDialog.addEventListener("close",()=>{
+    byId("resetShareLink").value="";
+    byId("helpDescription").textContent="";
+    clearMessage("copyHelp");
+  });
+  byId("closeHelp").addEventListener("click",()=>helpDialog.close());
+  byId("copyResetLink").addEventListener("click",async()=>{
+    const link=byId("resetShareLink");
+    if(!link.value){showMessage("Ce lien n'est plus disponible.","error","copyHelp");return;}
+    try{
+      if(!navigator.clipboard || !navigator.clipboard.writeText)throw new Error("Presse-papiers non disponible");
+      await navigator.clipboard.writeText(link.value);
+      showMessage("Lien copié. Envoyez-le uniquement à la bonne personne.","success","copyHelp");
+    }catch{
+      link.focus();link.select();
+      showMessage("Le lien est sélectionné. Copiez-le manuellement pour l'envoyer.","success","copyHelp");
     }
-    
-    // Bouton tirage
-    const drawBtn = document.getElementById('createDrawBtn');
-    const resetDrawBtn = document.getElementById('resetDrawBtn');
-    const drawWarning = document.getElementById('drawWarning');
-    const drawInfo = document.getElementById('drawInfo');
-    
-    if (approvedUsers.length < 2) {
-        drawBtn.disabled = true;
-        drawWarning.classList.remove('hidden');
-    } else {
-        drawWarning.classList.add('hidden');
-    }
-    
-    // Afficher le bouton de réinitialisation si un tirage existe
-    if (drawStatus.has_draw) {
-        resetDrawBtn.style.display = 'inline-block';
-        drawInfo.classList.remove('hidden');
-    } else {
-        resetDrawBtn.style.display = 'none';
-        drawInfo.classList.add('hidden');
-    }
-    
-    // Liste des utilisateurs en attente
-    const pendingSection = document.getElementById('pendingSection');
-    const pendingList = document.getElementById('pendingList');
-    
-    if (pendingUsers.length > 0) {
-        pendingSection.classList.remove('hidden');
-        pendingList.innerHTML = pendingUsers.map(user => `
-            <div class="user-item">
-                <div class="user-info">
-                    <h4>${escapeHtml(user.first_name)}</h4>
-                    <p>${escapeHtml(user.email)}</p>
-                </div>
-                <div class="user-actions">
-                    <button onclick="approveUser(${user.id})" class="btn btn-success btn-small">Approuver</button>
-                    <button onclick="rejectUser(${user.id})" class="btn btn-danger btn-small">Rejeter</button>
-                </div>
-            </div>
-        `).join('');
-    } else {
-        pendingSection.classList.add('hidden');
-    }
-    
-    // Liste de tous les utilisateurs
-    document.getElementById('totalUsers').textContent = allUsers.length;
-    document.getElementById('userList').innerHTML = allUsers.map(user => `
-        <div class="user-item">
-            <div class="user-info">
-                <h4>${escapeHtml(user.first_name)}</h4>
-                <p>${escapeHtml(user.email)}</p>
-            </div>
-            <div class="user-actions">
-                ${user.is_admin ? '<span class="badge badge-admin">Admin</span>' : ''}
-                ${user.is_approved ? '<span class="badge badge-approved">Approuvé</span>' : '<span class="badge badge-pending">En attente</span>'}
-            </div>
-        </div>
-    `).join('');
-}
+  });
+  async function generatePasswordReset(person,button){
+    const id=Number(person.id);
+    if(!Number.isSafeInteger(id)||id<1||Number(person.is_admin)===1)return;
+    if(!window.confirm("Préparer un lien personnel pour "+person.first_name+" ? L'ancien lien éventuel sera annulé."))return;
+    busy(button,true);clearMessage();
+    try{
+      const response=await apiRequest("/admin.php?action=create-password-reset",{
+        method:"POST",data:{user_id:id}
+      });
+      if(!/^[a-f0-9]{64}$/.test(response.token))throw new Error("Réponse du serveur invalide.");
+      const destination=new URL("reset.html#token="+response.token,window.location.href);
+      byId("helpDescription").textContent="Voici le lien pour "+person.first_name+". Partagez-le par message privé ou montrez-le directement sur son appareil.";
+      byId("resetShareLink").value=destination.href;
+      clearMessage("copyHelp");
+      helpDialog.showModal();
+      byId("copyResetLink").focus();
+    }catch(error){showMessage(error.message);}
+    finally{busy(button,false);}
+  }
 
-// Approuver un utilisateur
-async function approveUser(userId) {
-    try {
-        const response = await fetch(`${API_BASE}/admin.php?action=approve-user&user_id=${userId}`, {
-            method: 'POST'
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast('Utilisateur approuvé!', 'success');
-            loadData();
-        } else {
-            showToast(data.error || 'Erreur', 'error');
-        }
-    } catch (error) {
-        console.error('Approve error:', error);
-        showToast('Erreur de connexion', 'error');
+  byId("createDrawBtn").addEventListener("click",()=>{
+    if(draw.has_draw||pending.length>0||approved.length<2)return;
+    byId("drawDialogInfo").textContent="Vous allez lancer le tirage "+year+" pour "+approved.length+" personnes confirmées. Le compte organisateur est inclus s'il est approuvé.";
+    drawDialog.showModal();
+  });
+  byId("confirmDraw").addEventListener("click",async()=>{
+    const button=byId("confirmDraw");busy(button,true);
+    try{
+      await apiRequest("/admin.php?action=create-draw",{method:"POST",data:{year}});
+      drawDialog.close();
+      await loadData();showMessage("Le tirage a été réalisé. La magie de Noël peut commencer !","success");
+    }catch(error){drawDialog.close();await loadData();showMessage(error.message);}
+    finally{busy(button,false);}
+  });
+  byId("resetDrawBtn").addEventListener("click",()=>{
+    if(!draw.has_draw)return;
+    byId("confirmYear").value="";clearMessage("resetMessage");
+    byId("yearLabel").textContent="Pour confirmer, écrivez "+year+" dans la case ci-dessous";
+    resetDialog.showModal();
+  });
+  byId("confirmReset").addEventListener("click",async()=>{
+    if(byId("confirmYear").value.trim()!==String(year)){
+      showMessage("Saisissez l'année "+year+" pour confirmer.","error","resetMessage");byId("confirmYear").focus();return;
     }
-}
-
-// Rejeter un utilisateur
-async function rejectUser(userId) {
-    if (!confirm('Voulez-vous vraiment rejeter cet utilisateur?')) return;
-    
-    try {
-        const response = await fetch(`${API_BASE}/admin.php?action=reject-user&user_id=${userId}`, {
-            method: 'POST'
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast('Utilisateur rejeté', 'success');
-            loadData();
-        } else {
-            showToast(data.error || 'Erreur', 'error');
-        }
-    } catch (error) {
-        console.error('Reject error:', error);
-        showToast('Erreur de connexion', 'error');
-    }
-}
-
-// Créer un tirage
-async function createDraw() {
-    if (!confirm('Voulez-vous lancer le tirage au sort? Chaque participant recevra secrètement un nom.')) return;
-    
-    try {
-        const response = await fetch(`${API_BASE}/admin.php?action=create-draw`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ year: new Date().getFullYear() })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast('Tirage créé avec succès!', 'success');
-            loadData();
-        } else {
-            showToast(data.error || 'Erreur lors du tirage', 'error');
-        }
-    } catch (error) {
-        console.error('Draw error:', error);
-        showToast('Erreur de connexion', 'error');
-    }
-}
-
-// Réinitialiser un tirage
-async function resetDraw() {
-    const year = new Date().getFullYear();
-    
-    if (!confirm(`⚠️ ATTENTION!\n\nVoulez-vous vraiment SUPPRIMER le tirage de ${year}?\n\nToutes les attributions seront perdues et vous devrez relancer un nouveau tirage.\n\nCette action est irréversible!`)) {
-        return;
-    }
-    
-    // Double confirmation pour sécurité
-    if (!confirm('Êtes-vous absolument sûr? Tapez OK pour confirmer.')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE}/admin.php?action=delete-draw`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ year: year })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast('Tirage réinitialisé! Vous pouvez maintenant relancer un nouveau tirage.', 'success');
-            loadData();
-        } else {
-            showToast(data.error || 'Erreur lors de la réinitialisation', 'error');
-        }
-    } catch (error) {
-        console.error('Reset draw error:', error);
-        showToast('Erreur de connexion', 'error');
-    }
-}
-
-// Déconnexion
-function logout() {
-    fetch(`${API_BASE}/auth.php?action=logout`, { method: 'POST' })
-        .then(() => {
-            window.location.href = 'index.html';
-        });
-}
-
-// Afficher un toast
-function showToast(text, type = 'success') {
-    const toast = document.getElementById('message');
-    toast.textContent = text;
-    toast.className = `message-toast ${type}`;
-    toast.classList.remove('hidden');
-    
-    setTimeout(() => {
-        toast.classList.add('hidden');
-    }, 3000);
-}
-
-// Echapper le HTML
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Initialisation
-loadData();
+    const button=byId("confirmReset");busy(button,true);clearMessage("resetMessage");
+    try{
+      await apiRequest("/admin.php?action=delete-draw",{method:"POST",data:{year,confirm_year:year}});
+      resetDialog.close();await loadData();
+      showMessage("Le tirage a été réinitialisé. Prévenez les participants avant de le relancer.","success");
+    }catch(error){showMessage(error.message,"error","resetMessage");}
+    finally{busy(button,false);}
+  });
+  loadData();
+});

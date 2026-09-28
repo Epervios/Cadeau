@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
 import random
@@ -23,7 +23,9 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # JWT Configuration
-SECRET_KEY = os.environ.get('JWT_SECRET', 'secret-santa-key-2024')
+SECRET_KEY = os.environ.get("JWT_SECRET")
+if not SECRET_KEY or len(SECRET_KEY) < 32:
+    raise RuntimeError("JWT_SECRET doit contenir au moins 32 caractères et être défini dans l'environnement")
 ALGORITHM = "HS256"
 
 # Create the main app without a prefix
@@ -88,7 +90,9 @@ def create_token(user_id: str, email: str, is_admin: bool) -> str:
     payload = {
         "user_id": user_id,
         "email": email,
-        "is_admin": is_admin
+        "is_admin": is_admin,
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(days=7)
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -112,20 +116,28 @@ async def get_admin_user(user: dict = Depends(get_current_user)):
 
 # Initialize admin user
 async def init_admin():
-    admin_email = "eric.savary@netplus.ch"
+    """Initialise l'administrateur uniquement avec des identifiants fournis hors du code."""
+    admin_email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "")
+    if not admin_email or not admin_password:
+        logger.warning("Pas de compte administrateur créé automatiquement : définir ADMIN_EMAIL et ADMIN_PASSWORD pour une première installation.")
+        return
+    if len(admin_password) < 12:
+        raise RuntimeError("ADMIN_PASSWORD doit contenir au moins 12 caractères")
     existing = await db.users.find_one({"email": admin_email}, {"_id": 0})
-    if not existing:
-        admin = User(
-            first_name="Eric",
-            email=admin_email,
-            password_hash=hash_password("x4Q45jUn7Hxq4M"),
-            is_admin=True,
-            is_approved=True
-        )
-        doc = admin.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        await db.users.insert_one(doc)
-        logger.info("Admin user created")
+    if existing:
+        return
+    admin = User(
+        first_name=os.environ.get("ADMIN_FIRST_NAME", "Administrateur"),
+        email=admin_email,
+        password_hash=hash_password(admin_password),
+        is_admin=True,
+        is_approved=True
+    )
+    doc = admin.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.users.insert_one(doc)
+    logger.info("Compte administrateur initialisé depuis les variables d'environnement")
 
 # Routes
 @api_router.get("/")

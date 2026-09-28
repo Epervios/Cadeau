@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Cadeau — Maquette Noël magique et accessible</title>
+<style>
+:root{--fir:#173a32;--fir2:#0e2926;--berry:#9c2838;--cream:#fff9ec;--gold:#f0d38a;--ink:#23352c;--snow:#eef1eb;--bsize:20px;--outer:24px}
+*{box-sizing:border-box}
+html{scroll-behavior:auto}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;font-size:var(--bsize);line-height:1.55;color:var(--ink);background:radial-gradient(ellipse at 50% -16%,#446d60 0,transparent 56%),linear-gradient(160deg,#0f302b,#10261f 85%);min-height:100vh}
+body.large{--bsize:24px}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:4px solid #f6b735;outline-offset:5px}
+.skip{position:absolute;left:1rem;top:-200px;background:var(--cream);z-index:100;padding:.5rem}
+.skip:focus{top:1rem}
+.demo{max-width:960px;margin:0 auto;padding:18px 18px 68px}
+.demo-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;color:#fff9ec;margin-bottom:18px}
+.demo-head strong{font-size:1rem;letter-spacing:.04em}
+.demo-label{font-size:.7em;border:1px solid #eedfa6;border-radius:50px;padding:6px 12px;color:#f8ecc2}
+.demo-head button{background:#fff9ec;color:#16342c;border:2px solid #fff;border-radius:50px;padding:9px 18px;font-weight:750;min-height:54px}
+.demo-nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.demo-nav button{color:white;background:transparent;border:2px solid #9cb6ac;border-radius:12px;padding:9px 15px;min-height:55px;font-weight:700;flex:1 1 140px}
+.demo-nav button[aria-pressed=true]{background:#fff9ec;color:#173a32;border-color:#fff9ec}
+.sheet{overflow:hidden;border:4px solid rgba(243,215,154,.76);border-radius:25px;box-shadow:0 28px 80px #0005;background:var(--cream)}
+.hero{position:relative;min-height:245px;background:#15352f;isolation:isolate}
+.hero svg{display:block;width:100%;height:310px;object-fit:cover}
+.hero-heading{position:absolute;left:5%;right:5%;top:7%;text-align:center;color:#fffdf3;text-shadow:0 2px 12px #0c2826,0 2px 3px #0c2826}
+.hero-heading .eyebrow{font-size:.85em;font-weight:750;letter-spacing:.16em;text-transform:uppercase;color:#f8d995}
+.hero-heading h1{font-family:Georgia,"Times New Roman",serif;line-height:1.05;font-size:clamp(2.2rem,7vw,4.1rem);margin:12px 0 8px;color:#fff8e9;font-weight:700}
+.hero-heading p{font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.1rem,3vw,1.55rem);margin:0}
+.page{padding:clamp(22px,5vw,53px) clamp(18px,5vw,80px) 45px;min-height:400px}
+.page[hidden]{display:none}
+.page h2{font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.9rem,5vw,2.65rem);line-height:1.18;margin:0 0 18px;color:var(--fir)}
+.center{text-align:center}
+.lead{max-width:620px;margin:0 auto 26px;font-size:1.05em}
+button.cta{display:block;width:100%;max-width:570px;margin:17px auto 0;min-height:64px;border:0;border-radius:14px;background:var(--fir);color:#fffdf0;font-weight:800;font-size:1em;padding:14px 20px;box-shadow:0 6px 0 #0d2a23}
+button.cta:hover{background:#245246}
+button.secondary{display:block;min-height:58px;margin:16px auto 0;border:2px solid var(--fir);border-radius:14px;background:transparent;color:var(--fir);padding:10px 22px;font-weight:750}
+button.secondary:hover{background:#e6efe8}
+button.ghost{background:transparent;border:0;text-decoration:underline;font-weight:750;padding:14px;min-height:56px;color:var(--fir)}
+.paper{background:linear-gradient(155deg,#fffefd,#fff7e5);border:1px solid #dccaa7;border-radius:21px;box-shadow:0 14px 35px #433c2717;padding:clamp(20px,5vw,36px);max-width:670px;margin:0 auto}
+.holly{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:15px;font-size:1.6em}
+.holly::before,.holly::after{content:"✦";font-size:.7em;color:#b08b39}
+.helper{max-width:560px;margin:22px auto 0;background:#e8eee7;padding:13px 19px;border-radius:12px;color:#223d33;text-align:center}
+.helper b{font-weight:800}
+.steps{display:grid;gap:12px;max-width:580px;margin:28px auto 0}
+.step{display:flex;gap:15px;align-items:center;text-align:left;background:#f2ead8;padding:17px;border-radius:14px;font-weight:700}
+.step .num{display:grid;place-items:center;background:#225340;color:white;border-radius:50%;width:44px;height:44px;flex:none}
+.step.pending{background:#f9efda}
+.step.pending .num{background:#8e673c}
+.envelope{width:min(100%,340px);margin:28px auto 25px;aspect-ratio:1.5;position:relative;border-radius:6px 6px 15px 15px;background:linear-gradient(120deg,#f2dec0,#fff7e5 55%,#e4c69f);border:3px solid #d3b18a;filter:drop-shadow(0 14px 12px #5e482f3a);overflow:hidden}
+.envelope:before{content:"";position:absolute;inset:0;clip-path:polygon(0 0,50% 63%,100% 0);background:linear-gradient(180deg,#ead2ac,#fff6db);filter:drop-shadow(0 2px 2px #be9b6f)}
+.envelope:after{content:"";position:absolute;width:74px;height:74px;border-radius:50%;left:calc(50% - 37px);top:49%;background:radial-gradient(circle at 28% 25%,#d55b64,#9c2838 52%,#651521);border:4px solid #a8793a;box-shadow:0 1px 6px #503b2b88}
+.envelope .seal{position:absolute;z-index:3;left:0;right:0;top:calc(49% + 9px);text-align:center;color:#ffe7b5;font-family:Georgia,serif;font-size:31px;line-height:1.8}
+.reveal{border:2px solid #af8241;padding:20px;border-radius:16px;background:#f8ecd4;margin:24px auto 12px;max-width:500px}
+.reveal .big-name{font-family:Georgia,serif;font-size:clamp(2rem,7vw,3.7rem);font-weight:700;color:#7e2330;margin:7px 0}
+[hidden]{display:none!important}
+.wait-mark{font-size:3.1em;line-height:1.3;margin-bottom:15px}
+.admin-steps{display:grid;gap:15px;max-width:650px;margin:15px auto}
+.admin-step{display:flex;gap:17px;align-items:flex-start;background:#f4eddb;border-radius:17px;padding:20px}
+.admin-step .number{flex:none;display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#234e3c;color:#fff;font-weight:800;font-size:1.15em}
+.admin-step h3{margin:0 0 5px;color:#193d33;font-size:1.16em}
+.admin-step p{margin:0;font-size:.95em}
+.admin-count{font-size:1.8em;font-weight:850;color:#133f34;margin:10px 0}
+.status{display:inline-block;background:#e7eddf;border:2px solid #587961;border-radius:12px;padding:8px 14px;font-weight:700}
+.footer{padding:17px 25px 23px;text-align:center;color:#3e534b;font-size:.78em;border-top:1px solid #e0d8c5;background:#f8efdd}
+.demo-note{color:#fffbe7;font-size:.83em;text-align:center;margin:15px auto 0;max-width:820px}
+@media(max-width:560px){.demo{padding:9px 9px 45px}.hero svg{height:240px}.hero-heading{top:10%}.hero-heading h1{margin:5px 0}.page{padding:23px 18px 36px}.demo-nav button{flex-basis:42%;font-size:.9em}.admin-step{padding:14px;gap:12px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#contenu">Aller au contenu</a>
+<div class="demo">
+  <div class="demo-head">
+    <strong>✦ CADEAU · PROPOSITION NOËL ✦</strong>
+    <span class="demo-label">Maquette · données fictives</span>
+    <button id="larger" type="button" aria-pressed="false">Agrandir le texte A+</button>
+  </div>
+  <nav class="demo-nav" aria-label="Découvrir les quatre écrans">
+    <button type="button" data-view="welcome" aria-pressed="true">1. Accueil</button>
+    <button type="button" data-view="waiting" aria-pressed="false">2. En attente</button>
+    <button type="button" data-view="gift" aria-pressed="false">3. Mon cadeau</button>
+    <button type="button" data-view="admin" aria-pressed="false">4. Organiser</button>
+  </nav>
+  <main class="sheet" id="contenu">
+    <div class="hero">
+      <svg role="img" aria-label="Illustration d'un village enneigé, sous les étoiles, avec une maison aux fenêtres illuminées" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="sky" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#0d272c"/><stop offset="1" stop-color="#3e6257"/></linearGradient><linearGradient id="snow" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#e7eee5"/><stop offset="1" stop-color="#a1c1ba"/></linearGradient></defs>
+      <rect width="1000" height="360" fill="url(#sky)"/>
+      <g fill="#f7e6ad"><circle cx="90" cy="52" r="2"/><circle cx="190" cy="90" r="1.8"/><circle cx="267" cy="38" r="2.4"/><circle cx="382" cy="86" r="1.8"/><circle cx="504" cy="46" r="2.3"/><circle cx="624" cy="103" r="2"/><circle cx="717" cy="40" r="2.4"/><circle cx="824" cy="91" r="1.8"/><circle cx="924" cy="54" r="2.2"/><path d="M910 20v28m-14-14h28M152 70v18m-9-9h18" stroke="#f8e5ae" stroke-width="2.2"/></g>
+      <path d="M0 262 Q140 196 300 251 T640 249 T1000 238 L1000 360H0Z" fill="#739a8c"/>
+      <path d="M0 288 Q150 231 306 280 T631 278 T1000 260 L1000 360H0Z" fill="url(#snow)"/>
+      <g transform="translate(105,138)"><path d="M0 150 56 15 112 150Z" fill="#123d33"/><path d="M12 109 56 0 100 109Z" fill="#275341"/><path d="M28 48 56 0 84 48Z" fill="#e6eee4"/><path d="M18 95 55 51 95 95" stroke="#dbe7df" stroke-width="11" fill="none"/><path d="M8 139 55 96 105 139" stroke="#dce7de" stroke-width="10" fill="none"/></g>
+      <g transform="translate(760,132)"><path d="M0 146 52 0 110 146Z" fill="#154030"/><path d="M15 99 53 0 95 99" fill="#285642"/><path d="M22 96 55 64 89 96" fill="none" stroke="#d4e2d8" stroke-width="10"/><path d="M7 143 52 111 100 143" fill="none" stroke="#d4e2d8" stroke-width="11"/></g>
+      <g transform="translate(355,205)"><path d="M0 60 120-12 244 60V140H0Z" fill="#6f3c2d"/><path d="M-18 59 120-29 263 59" fill="none" stroke="#eee4d4" stroke-width="18" stroke-linecap="round"/><rect x="103" y="79" width="41" height="61" rx="2" fill="#372b25"/><rect x="28" y="66" width="51" height="42" rx="3" fill="#fad788" stroke="#f6ecd9" stroke-width="8"/><rect x="167" y="66" width="51" height="42" rx="3" fill="#fad788" stroke="#f6ecd9" stroke-width="8"/><path d="M54 67v41M192 67v41" stroke="#704736" stroke-width="5"/><path d="M0 140h245" stroke="#fbf8e9" stroke-width="14"/></g>
+      <g fill="#f8eee2" opacity=".9"><circle cx="30" cy="174" r="3"/><circle cx="234" cy="203" r="3"/><circle cx="686" cy="195" r="3"/><circle cx="858" cy="232" r="3"/><circle cx="942" cy="205" r="3"/><circle cx="456" cy="187" r="2"/></g>
+      <path d="M0 352 Q270 294 510 343 T1000 334v26H0Z" fill="#f4f4ec"/>
+      </svg>
+      <div class="hero-heading">
+        <div class="eyebrow">✦ Notre Noël en famille ✦</div>
+        <h1>La magie des cadeaux</h1>
+        <p>Un prénom, une surprise, un beau moment à partager.</p>
+      </div>
+    </div>
+    <section id="welcome" class="page center" aria-labelledby="welcome-heading">
+      <div class="paper">
+        <div class="holly" aria-hidden="true">❦</div>
+        <h2 id="welcome-heading" tabindex="-1">Bienvenue à notre Noël&nbsp;!</h2>
+        <p class="lead">Cette année, chacun offre un cadeau à une personne tirée au sort. Et le plus amusant&nbsp;? Garder le secret jusqu'à Noël&nbsp;!</p>
+        <button type="button" class="cta" data-go="waiting">Je participe au tirage</button>
+        <button type="button" class="ghost" data-go="gift">J'ai déjà participé</button>
+      </div>
+      <p class="helper">Vous n'avez rien à installer. Tout se fait simplement depuis votre téléphone ou votre ordinateur.</p>
+    </section>
+    <section id="waiting" class="page center" aria-labelledby="waiting-heading" hidden>
+      <div class="paper">
+        <div class="wait-mark" aria-hidden="true">🎄</div>
+        <h2 id="waiting-heading" tabindex="-1">Votre participation est enregistrée&nbsp;!</h2>
+        <p class="lead">Quand toute la famille sera inscrite, nous pourrons tirer au sort les cadeaux.</p>
+        <div class="steps" aria-label="Les trois étapes">
+          <div class="step"><span class="num" aria-hidden="true">✓</span><span>Vous participez au Noël en famille</span></div>
+          <div class="step pending"><span class="num" aria-hidden="true">2</span><span>Nous attendons les autres participants</span></div>
+          <div class="step pending"><span class="num" aria-hidden="true">3</span><span>Vous ouvrirez votre enveloppe</span></div>
+        </div>
+        <button class="cta" type="button" data-go="gift">Voir l'exemple de mon cadeau</button>
+      </div>
+    </section>
+    <section id="gift" class="page center" aria-labelledby="gift-heading" hidden>
+      <div class="paper">
+        <div class="holly" aria-hidden="true">✦</div>
+        <h2 id="gift-heading" tabindex="-1">Une surprise rien que pour vous</h2>
+        <p class="lead" id="gift-intro">Un petit secret se cache dans cette enveloppe…</p>
+        <div class="envelope" id="envelope" aria-hidden="true"><span class="seal">✦</span></div>
+        <div class="reveal" id="reveal" hidden aria-live="polite">
+          <p>Cette année, vous offrirez un cadeau à…</p>
+          <p class="big-name">Camille</p>
+          <p>Chut… gardez la surprise jusqu'à Noël&nbsp;!</p>
+          <p><small>Prénom fictif, uniquement pour cette démonstration.</small></p>
+        </div>
+        <button class="cta" type="button" id="open-envelope">Ouvrir mon enveloppe</button>
+        <button class="secondary" type="button" id="close-envelope" hidden>Refermer mon enveloppe</button>
+      </div>
+      <p class="helper">Vous pourrez revoir votre destinataire plus tard, depuis votre espace personnel.</p>
+    </section>
+    <section id="admin" class="page" aria-labelledby="admin-heading" hidden>
+      <div class="paper">
+        <div class="holly" aria-hidden="true">❦</div>
+        <h2 id="admin-heading" class="center" tabindex="-1">Préparons notre Noël</h2>
+        <p class="lead center">Tout pour organiser le tirage en trois étapes simples.</p>
+        <div class="admin-steps">
+          <div class="admin-step"><span class="number" aria-hidden="true">1</span><div><h3>Vérifier les participants</h3><p class="admin-count">8 inscrits</p><p>Deux inscriptions sont encore à valider.</p></div></div>
+          <div class="admin-step"><span class="number" aria-hidden="true">2</span><div><h3>Préparer le tirage</h3><p>Relisez la liste de la famille et vérifiez que personne ne manque.</p></div></div>
+          <div class="admin-step"><span class="number" aria-hidden="true">3</span><div><h3>Lancer le tirage</h3><p>Un dernier contrôle, puis chaque personne recevra son destinataire.</p><p style="margin-top:12px"><span class="status">En attente des validations</span></p></div></div>
+        </div>
+        <p class="helper" style="font-size:.85em">Cette vue est illustrative. Aucun participant et aucun tirage réel ne sont modifiés.</p>
+      </div>
+    </section>
+    <footer class="footer">Une carte de Noël qui prend vie · La magie d'être ensemble ✦</footer>
+  </main>
+  <p class="demo-note">Maquette visuelle autonome : la participation, les noms et le tirage sont entièrement fictifs. Aucun compte, aucune donnée personnelle et aucun serveur.</p>
+</div>
+<script>
+(() => {
+  const views=[...document.querySelectorAll('.page')];
+  const tabs=[...document.querySelectorAll('[data-view]')];
+  function show(id){
+    views.forEach(v=>v.hidden=v.id!==id);
+    tabs.forEach(t=>t.setAttribute('aria-pressed',String(t.dataset.view===id)));
+    const title=document.querySelector('#'+id+' h2');if(title)title.focus({preventScroll:true});
+    document.querySelector('.sheet').scrollIntoView({block:'start'});
+  }
+  tabs.forEach(t=>t.addEventListener('click',()=>show(t.dataset.view)));
+  document.querySelectorAll('[data-go]').forEach(t=>t.addEventListener('click',()=>show(t.dataset.go)));
+  document.querySelector('#larger').addEventListener('click',e=>{
+    const active=document.body.classList.toggle('large');
+    e.currentTarget.setAttribute('aria-pressed',String(active));
+    e.currentTarget.textContent=active?'Taille normale A−':'Agrandir le texte A+';
+  });
+  document.querySelector('#open-envelope').addEventListener('click',()=>{
+    document.querySelector('#envelope').hidden=true;
+    document.querySelector('#reveal').hidden=false;
+    document.querySelector('#gift-intro').hidden=true;
+    document.querySelector('#open-envelope').hidden=true;
+    const closer=document.querySelector('#close-envelope');closer.hidden=false;closer.focus();
+  });
+  document.querySelector('#close-envelope').addEventListener('click',()=>{
+    document.querySelector('#envelope').hidden=false;
+    document.querySelector('#reveal').hidden=true;
+    document.querySelector('#gift-intro').hidden=false;
+    const opener=document.querySelector('#open-envelope');opener.hidden=false;
+    document.querySelector('#close-envelope').hidden=true;opener.focus();
+  });
+})();
+</script>
+</body>
+</html>

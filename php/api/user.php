@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 
 // Vérifier l'authentification
-requireAuth();
+requireApproval();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -11,7 +11,7 @@ if ($method === 'GET') {
     
     if ($action === 'assignment') {
         // Obtenir l'attribution de l'utilisateur
-        $year = $_GET['year'] ?? date('Y');
+        $year = validYear($_GET['year'] ?? date('Y'));
         $userId = getCurrentUserId();
         
         $pdo = getDBConnection();
