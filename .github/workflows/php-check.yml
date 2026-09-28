@@ -23,6 +23,8 @@ jobs:
           for f in php/public/js/*.js; do node --check "$f"; done
       - name: Validate integration shell syntax
         run: bash -n php/tests/http-integration.sh
+      - name: Validate the real Christmas interface structure
+        run: node php/tests/ui-static.mjs
       - name: Unit test of Secret Santa draw
         run: php php/tests/unit.php
       - name: Reject accidentally committed local configurations
