@@ -1,3 +1,10 @@
+async function csrfToken() {
+    const response = await fetch(`${API_BASE}/auth.php?action=csrf`, { credentials: 'same-origin', cache: 'no-store' });
+    if (!response.ok) throw new Error('Impossible de vérifier la session');
+    const data = await response.json();
+    return data.csrf_token;
+}
+
 // Secret Santa - Admin Dashboard
 
 const API_BASE = '../api';
@@ -48,6 +55,8 @@ function updateUI() {
         document.getElementById('createDrawBtn').disabled = true;
         document.getElementById('createDrawBtn').textContent = 'Tirage déjà effectué';
     } else {
+        document.getElementById('createDrawBtn').disabled = false;
+        document.getElementById('createDrawBtn').textContent = 'Lancer le tirage';
         statusBadge.textContent = 'Pas de tirage';
         statusBadge.style.background = '#9ca3af';
     }
@@ -116,7 +125,8 @@ function updateUI() {
 async function approveUser(userId) {
     try {
         const response = await fetch(`${API_BASE}/admin.php?action=approve-user&user_id=${userId}`, {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'X-CSRF-Token': await csrfToken() }
         });
         
         const data = await response.json();
@@ -139,7 +149,8 @@ async function rejectUser(userId) {
     
     try {
         const response = await fetch(`${API_BASE}/admin.php?action=reject-user&user_id=${userId}`, {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'X-CSRF-Token': await csrfToken() }
         });
         
         const data = await response.json();
@@ -163,7 +174,7 @@ async function createDraw() {
     try {
         const response = await fetch(`${API_BASE}/admin.php?action=create-draw`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await csrfToken() },
             body: JSON.stringify({ year: new Date().getFullYear() })
         });
         
@@ -197,7 +208,7 @@ async function resetDraw() {
     try {
         const response = await fetch(`${API_BASE}/admin.php?action=delete-draw`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await csrfToken() },
             body: JSON.stringify({ year: year })
         });
         
@@ -216,11 +227,14 @@ async function resetDraw() {
 }
 
 // Déconnexion
-function logout() {
-    fetch(`${API_BASE}/auth.php?action=logout`, { method: 'POST' })
-        .then(() => {
-            window.location.href = 'index.html';
+async function logout() {
+    try {
+        await fetch(`${API_BASE}/auth.php?action=logout`, {
+            method: 'POST', headers: { 'X-CSRF-Token': await csrfToken() }
         });
+    } finally {
+        window.location.href = 'index.html';
+    }
 }
 
 // Afficher un toast

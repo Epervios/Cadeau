@@ -1,3 +1,10 @@
+async function csrfToken() {
+    const response = await fetch(`${API_BASE}/auth.php?action=csrf`, { credentials: 'same-origin', cache: 'no-store' });
+    if (!response.ok) throw new Error('Impossible de vérifier la session');
+    const data = await response.json();
+    return data.csrf_token;
+}
+
 // Secret Santa - Login/Register
 
 const API_BASE = '../api';
@@ -67,7 +74,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     try {
         const response = await fetch(`${API_BASE}/auth.php?action=login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await csrfToken() },
             body: JSON.stringify(formData)
         });
         
@@ -104,7 +111,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     try {
         const response = await fetch(`${API_BASE}/auth.php?action=register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await csrfToken() },
             body: JSON.stringify(formData)
         });
         

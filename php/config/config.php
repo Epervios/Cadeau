@@ -1,8 +1,18 @@
 <?php
 // Configuration générale de l'application Secret Santa
 
-// Démarrer la session si elle n'est pas déjà démarrée
+// Une session ne peut être créée qu'avec des cookies same-site.
 if (session_status() === PHP_SESSION_NONE) {
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $https,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
@@ -19,20 +29,11 @@ define('BASE_PATH', dirname(__DIR__));
 // URL de base (à adapter selon votre hébergeur)
 define('BASE_URL', 'http://localhost/secret-santa');
 
-// Clé secrète pour le hachage (CHANGEZ CETTE VALEUR !)
-define('SECRET_KEY', 'changez-cette-cle-secrete-pour-votre-securite');
-
-// Configuration CORS
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+// Les API sont exclusivement accessibles depuis le même domaine.
+// Aucun en-tête CORS wildcard ne doit être émis sur une API à cookies.
 header('Content-Type: application/json; charset=utf-8');
-
-// Gérer les requêtes OPTIONS (preflight)
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+header('Cache-Control: no-store');
+header('X-Content-Type-Options: nosniff');
 
 // Inclure la connexion à la base de données
 require_once BASE_PATH . '/config/database.php';

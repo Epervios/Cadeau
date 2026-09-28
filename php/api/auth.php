@@ -4,6 +4,7 @@ require_once '../config/config.php';
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'POST') {
+    requireCsrf();
     $input = getJsonInput();
     $action = $_GET['action'] ?? '';
     
@@ -66,7 +67,8 @@ if ($method === 'POST') {
             jsonError('Identifiants invalides', 401);
         }
         
-        // Créer la session
+        // Prévenir la fixation de session après authentification.
+        session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['first_name'] = $user['first_name'];
         $_SESSION['email'] = $user['email'];
@@ -86,6 +88,7 @@ if ($method === 'POST') {
         
     } elseif ($action === 'logout') {
         // Déconnexion
+        $_SESSION = [];
         session_destroy();
         jsonResponse(['message' => 'Déconnexion réussie']);
         
@@ -94,6 +97,9 @@ if ($method === 'POST') {
     }
     
 } elseif ($method === 'GET') {
+    if (($_GET['action'] ?? '') === 'csrf') {
+        jsonResponse(['csrf_token' => csrfToken()]);
+    }
     // Vérifier le statut de connexion
     if (isLoggedIn()) {
         $user = getUserById(getCurrentUserId());

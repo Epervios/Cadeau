@@ -8,17 +8,41 @@ function isLoggedIn() {
 
 // Vérifier si l'utilisateur est admin
 function isAdmin() {
-    return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1;
+    $user = getSessionUser();
+    return $user && (int)$user['is_admin'] === 1;
 }
 
 // Vérifier si l'utilisateur est approuvé
 function isApproved() {
-    return isset($_SESSION['is_approved']) && $_SESSION['is_approved'] == 1;
+    $user = getSessionUser();
+    return $user && (int)$user['is_approved'] === 1;
 }
 
 // Obtenir l'ID de l'utilisateur connecté
 function getCurrentUserId() {
     return $_SESSION['user_id'] ?? null;
+}
+
+// Ne pas faire confiance aux rôles mis en cache dans la session.
+function getSessionUser() {
+    if (!isset($_SESSION['user_id'])) return null;
+    return getUserById($_SESSION['user_id']) ?: null;
+}
+
+// Protection CSRF pour toutes les mutations basées sur cookie.
+function csrfToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function requireCsrf() {
+    $expected = csrfToken();
+    $provided = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!is_string($provided) || !hash_equals($expected, $provided)) {
+        jsonError('Session expirée ou requête non autorisée. Actualisez la page.', 403);
+    }
 }
 
 // Retourner une réponse JSON
@@ -125,7 +149,7 @@ function sanitizeOutput($data) {
 
 // Exiger l'authentification
 function requireAuth() {
-    if (!isLoggedIn()) {
+    if (!getSessionUser()) {
         jsonError('Non authentifié', 401);
     }
 }
@@ -140,7 +164,7 @@ function requireApproval() {
 
 // Exiger les droits admin
 function requireAdmin() {
-    requireAuth();
+    requireApproval();
     if (!isAdmin()) {
         jsonError('Accès administrateur requis', 403);
     }

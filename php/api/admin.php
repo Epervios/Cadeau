@@ -39,6 +39,7 @@ if ($method === 'GET') {
     }
     
 } elseif ($method === 'POST') {
+    requireCsrf();
     
     if ($action === 'approve-user') {
         // Approuver un utilisateur
@@ -67,13 +68,13 @@ if ($method === 'GET') {
         }
         
         $pdo = getDBConnection();
-        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? AND is_admin = 0");
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? AND is_admin = 0 AND is_approved = 0");
         $stmt->execute([$userId]);
         
         if ($stmt->rowCount() > 0) {
             jsonResponse(['message' => 'Utilisateur supprimé']);
         } else {
-            jsonError('Utilisateur non trouvé ou impossible de supprimer un admin', 404);
+            jsonError('Seule une inscription en attente peut être rejetée ; les participants existants ne sont pas supprimés', 404);
         }
         
     } elseif ($action === 'delete-draw') {

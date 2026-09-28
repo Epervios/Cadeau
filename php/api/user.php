@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 
 // Vérifier l'authentification
-requireAuth();
+requireApproval();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';

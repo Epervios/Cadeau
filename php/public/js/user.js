@@ -1,3 +1,10 @@
+async function csrfToken() {
+    const response = await fetch(`${API_BASE}/auth.php?action=csrf`, { credentials: 'same-origin', cache: 'no-store' });
+    if (!response.ok) throw new Error('Impossible de vérifier la session');
+    const data = await response.json();
+    return data.csrf_token;
+}
+
 // Secret Santa - User Dashboard
 
 const API_BASE = '../api';
@@ -48,16 +55,22 @@ async function loadAssignment() {
     } catch (error) {
         console.error('Load error:', error);
         document.getElementById('loadingSpinner').classList.add('hidden');
-        document.getElementById('noDrawCard').classList.remove('hidden');
+        // Une panne n'est pas l'absence de tirage : montrer une erreur explicite.
+        document.getElementById('noDrawCard').classList.add('hidden');
+        document.getElementById('loadingSpinner').insertAdjacentHTML('afterend',
+            '<p role="alert">Impossible de charger votre attribution. Réessayez plus tard.</p>');
     }
 }
 
 // Déconnexion
-function logout() {
-    fetch(`${API_BASE}/auth.php?action=logout`, { method: 'POST' })
-        .then(() => {
-            window.location.href = 'index.html';
+async function logout() {
+    try {
+        await fetch(`${API_BASE}/auth.php?action=logout`, {
+            method: 'POST', headers: { 'X-CSRF-Token': await csrfToken() }
         });
+    } finally {
+        window.location.href = 'index.html';
+    }
 }
 
 // Initialisation
