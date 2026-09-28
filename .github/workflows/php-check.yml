@@ -21,6 +21,8 @@ jobs:
         run: |
           set -eu
           for f in php/public/js/*.js; do node --check "$f"; done
+      - name: Validate integration shell syntax
+        run: bash -n php/tests/http-integration.sh
       - name: Unit test of Secret Santa draw
         run: php php/tests/unit.php
       - name: Reject accidentally committed local configurations
