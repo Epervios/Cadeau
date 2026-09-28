@@ -39,6 +39,20 @@ request() {
   jq -e . "$TEMP/response.json" >/dev/null
 }
 
+# Vérifier que le serveur ne publie JAMAIS les fichiers PHP privés.
+# Le serveur de test démarre avec -t php/public pour reproduire la racine Plesk.
+for forbidden in config/database.example.php includes/functions.php database.sql migrations/002_password_reset.sql bin/bootstrap_admin.php; do
+  status="$(curl --silent --show-error -o "$TEMP/forbidden-result" -w "%{http_code}" "$BASE/$forbidden")"
+  if [[ "$status" != 403 && "$status" != 404 ]]; then
+    echo "ÉCHEC sécurité : /$forbidden est accessible (HTTP $status)"
+    exit 1
+  fi
+done
+# Les trois passerelles d'API doivent rester atteignables depuis le répertoire public.
+[[ "$(curl --silent --show-error -o "$TEMP/csrf" -w "%{http_code}" "$BASE/api/auth.php?action=csrf")" == 200 ]]
+jq -e '.csrf_token' "$TEMP/csrf" >/dev/null
+echo "PASS : fichiers privés absents de la racine HTTP et API publique fonctionnelle."
+
 # Préconditions : seul l'admin initial est approuvé dans la base jetable.
 request "$ADMIN" GET "auth.php?action=me" 200
 [[ "$(jq -r .logged_in "$TEMP/response.json")" == false ]]

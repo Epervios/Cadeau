@@ -1,5 +1,5 @@
 /* Fonctions partagées par les trois pages PHP de Cadeau. */
-const API_BASE = "../api";
+const API_BASE = "api";
 
 async function apiRequest(resource, {method="GET", data=null}={}) {
   const options={method,credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}};

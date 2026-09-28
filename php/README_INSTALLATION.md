@@ -1,44 +1,80 @@
-# Cadeau v3 — Installation PHP/MySQL
+# Cadeau v3 — Installation Plesk sécurisée
 
-## Préparer l'hébergement
+L'application est structurée pour que **seul `php/public/` soit accessible depuis Internet**. Les fichiers de configuration et toute la logique métier restent dans `php/config/` et `php/api/`, **hors DocumentRoot**. Un simple fichier `.htaccess` ne suffit pas à protéger un dossier privé lorsque PHP est exécuté directement par nginx.
 
-PHP 8.1+ avec PDO MySQL, sessions et JSON, Apache avec `mod_rewrite`, prise en charge du fichier `.htaccess`, base MySQL/MariaDB et **HTTPS obligatoire en production**. L'hébergeur doit permettre la conservation d'une configuration de base de données hors du dépôt et l'exécution privée d'un script PHP CLI pour initialiser l'organisateur.
+## Sous-domaine noel.wizardaring.ch
 
-**Arborescence actuelle :** le dossier `php/` est la racine de l'application côté Apache. Son `.htaccess` autorise les pages sous `/public/` et les trois routes `/api/`, et interdit l'accès web à `/config/`, `/includes/`, `/bin/`, `/migrations/` et au reste des fichiers. **Ne pas définir seulement `php/public/` comme DocumentRoot sans adapter le routage API : les pages appellent `../api/`.**
+Dans **Plesk → Sites Web & Domaines → noel.wizardaring.ch** :
 
-Tester depuis un accès extérieur que les fichiers privés donnent 403 ou 404 ; ne pas se fier uniquement à l'existence du `.htaccess` si l'hébergeur ignore `AllowOverride`.
+1. Connecter le dépôt GitHub public `https://github.com/Epervios/Cadeau.git`, branche `main`.
+2. Définir le chemin de déploiement Git `/noel.wizardaring.ch` (dans la racine de l'espace Web Plesk), en **mode manuel** pendant la mise en place.
+3. Définir la **racine du document** du sous-domaine dans les Paramètres d'hébergement : `noel.wizardaring.ch/php/public`. Attention : ni `noel.wizardaring.ch` ni `noel.wizardaring.ch/php`.
+4. Activer PHP 8.1+ (8.2 ou 8.3 recommandé), PDO MySQL, HTTPS et la redirection HTTP → HTTPS. Un certificat valide doit couvrir le sous-domaine. Avec Cloudflare, utiliser SSL/TLS Full (strict) après validation du certificat côté Plesk.
+5. Dans Git Plesk, récupérer les fichiers depuis `main`, puis déclencher un déploiement manuel.
 
-## Nouvelle installation (base vide)
+Arborescence attendue :
+```text
+/noel.wizardaring.ch/              ← dépôt Git complet (répertoire privé parent)
+  README.md
+  docs/
+  php/
+    api/                            ← code métier privé, PAS accessible par URL
+    config/                         ← configuration MySQL privée
+    bin/                            ← création/récupération d'administrateur (CLI)
+    includes/                       ← fonctions privées
+    migrations/                     ← scripts SQL privés
+    database.sql                    ← schéma SQL privé
+    public/                         ← racine du document (SEUL répertoire publié)
+      index.html
+      user.html
+      admin.html
+      reset.html
+      .htaccess
+      api/                          ← petites passerelles PHP vers ../../api/
+        auth.php
+        user.php
+        admin.php
+      css/
+      js/
+      assets/
+```
 
-1. Créer une base MySQL/MariaDB vide ; importer `php/database.sql` dans cette base via phpMyAdmin ou un client SQL.
-2. Copier `php/config/database.example.php` en `php/config/database.php` **sur l'hébergement seulement**. Ajuster les constantes de connexion. Fournir le secret SQL via la variable d'environnement `CADEAU_DB_PASSWORD` lorsque disponible. Le fichier `database.php` est ignoré par Git.
-3. Créer le premier compte administrateur depuis un **terminal privé** de la machine où la base est accessible, à l'aide d'un mot de passe long et unique :
+Dans les pages, les appels API sont relatifs à `api/` (par exemple `https://noel.wizardaring.ch/api/auth.php?action=csrf`). Les trois passerelles autorisées chargent les fichiers privés via des chemins calculés avec `__DIR__`.
 
-   ```sh
-   ADMIN_EMAIL="adresse-administrateur@example.org" \
-   ADMIN_FIRST_NAME="Organisateur" \
-   ADMIN_PASSWORD="<mot-de-passe-personnel-de-12-caractères-minimum>" \
-   php php/bin/bootstrap_admin.php
-   ```
+## Test de sécurité OBLIGATOIRE avant le mot de passe SQL
 
-   Ne jamais utiliser littéralement le mot de passe d'exemple. Ne pas exposer `php/bin/` par HTTP. Selon le répertoire courant, adapter les chemins.
-4. Activer HTTPS/redirection et vérifier les restrictions Apache, puis tester la connexion, l'inscription, le tirage et la récupération d'accès avec des **comptes fictifs**.
+Ouvrir PowerShell sur un autre appareil :
 
-## Mettre à jour une ancienne base
+```powershell
+$site = "https://noel.wizardaring.ch"
+foreach ($path in @(
+  "/",
+  "/api/auth.php?action=csrf",
+  "/config/database.example.php",
+  "/includes/functions.php",
+  "/database.sql",
+  "/migrations/002_password_reset.sql",
+  "/bin/bootstrap_admin.php"
+)) {
+  $code = curl.exe --silent --show-error -o NUL -w "%{http_code}" "$site$path"
+  "{0} : HTTP {1}" -f $path, $code
+}
+```
 
-Ne **pas** importer `php/database.sql` sur une base contenant des personnes et des tirages. Sauvegarder les fichiers et la base, puis **tester la restauration** sur une copie isolée. Vérifier les colonnes, index et contraintes réelles de la base ; les versions historiques peuvent différer du schéma initial.
+Résultats attendus : `/` = 200 ; `/api/auth.php?action=csrf` = 200 et réponse JSON contenant `csrf_token` ; **tous les chemins privés = 403 ou 404**. Vérifier que les 403/404 ne sont pas simplement une page Cloudflare bloquant aussi l'API.
 
-Sur la copie seulement, appliquer dans cet ordre les migrations manquantes :
+Ne **pas** saisir ni exposer le mot de passe SQL tant que ce test n'est pas concluant. En cas de problème, recontrôler le DocumentRoot dans Plesk et le chemin Git ; vérifier également le mode nginx/Apache. Les règles `.htaccess` sous `public/` sont seulement une défense additionnelle.
 
-1. `php/migrations/001_auth_attempts.sql` : limitation des tentatives de connexion.
-2. `php/migrations/002_password_reset.sql` : jetons de récupération et révocation des anciennes sessions.
+## Configuration d'une base neuve
 
-Chaque migration doit être appliquée au plus une fois. Vérifier également l'unicité des destinataires et les clés étrangères historiques avant toute modification structurelle. Les sessions ouvertes avant la migration de récupération devront se reconnecter.
+Sur Plesk/phpMyAdmin, créer la base `cadeau` et importer **une seule fois** `php/database.sql` dans la base vide. Les cinq tables attendues sont `users`, `draws`, `assignments`, `auth_attempts` et `password_reset_tokens`. Ne pas lancer les migrations sur cette base neuve : leur contenu est déjà inclus dans le schéma complet.
 
-En cas de perte d'accès à l'organisateur, `php/bin/reset_admin_password.php` permet de changer son mot de passe **en CLI uniquement**, avec `ADMIN_EMAIL` et `ADMIN_PASSWORD` dans l'environnement (migration 002 préalable).
+Sur Plesk, dans **le dossier privé** `/noel.wizardaring.ch/php/config/`, copier `database.example.php` vers `database.php`. Ce dernier est ignoré par Git. Conserver `DB_HOST='localhost'`, `DB_NAME='cadeau'`, `DB_USER='cadeau_admin'` si ces valeurs correspondent bien à la base Plesk. Le mot de passe réel doit être saisi **sur Plesk uniquement**, de préférence via une variable d'environnement `CADEAU_DB_PASSWORD`, ou directement dans le fichier privé si l'hébergement n'offre pas de variable d'environnement PHP fiable. Ne jamais le publier dans GitHub ni dans une capture.
 
-## Réception
+Pour créer le premier compte organisateur, exécuter `php/bin/bootstrap_admin.php` **en terminal PHP privé**, avec `ADMIN_EMAIL`, `ADMIN_FIRST_NAME` et un `ADMIN_PASSWORD` long et unique. Si aucun terminal privé n'est disponible dans l'abonnement Plesk, demander au support de l'hébergeur ou utiliser une procédure manuelle hors Web ; **ne jamais mettre ce script dans `public/`**.
 
-Tester avec plusieurs comptes : inscription, approbation, accès refusé avant approbation, tirage sans auto-attribution, conservation d'une attribution après rechargement, impossibilité de doubler le tirage, envoi privé d'un lien de récupération et expiration de celui-ci.
+## Vérifications avant ouverture aux participants
 
-Voir le [guide complet de sécurité et de mise en production](../docs/DEPLOIEMENT_SECURISÉ.md). Il reste impératif de remplacer sur le véritable hébergement tout identifiant anciennement publié.
+Lancer les tests automatisés sur GitHub, vérifier en hébergement réel le parcours connexion/CSRF et l'exposition des chemins privés, puis utiliser des comptes de test. Conserver les sauvegardes et la possibilité de restaurer la base. Les invitations SMTP ne sont pas encore implémentées ; la récupération familiale est assistée par un lien créé par l'organisateur.
+
+Pour toute **ancienne** base non vide : sauvegarde et migrations différentielles documentées dans `migrations/`, jamais réimporter `database.sql` par-dessus les données existantes.

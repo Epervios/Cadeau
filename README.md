@@ -28,6 +28,10 @@ Une **seule application : PHP 8.1+ et MySQL/MariaDB**. La version React/FastAPI/
 
 Gros caractères, boutons larges, option **Agrandir le texte A+**, navigation clavier et mouvements réduits selon les préférences de l'appareil. Les invitations automatiques par e-mail et la gestion des exclusions entre couples ne sont **pas** implémentées.
 
+## Architecture de publication sécurisée
+
+Déploiement Git du projet dans `/noel.wizardaring.ch` et **DocumentRoot Plesk impérativement sur `noel.wizardaring.ch/php/public`**. Les trois passerelles `php/public/api/` relient le navigateur au code métier privé de `php/api/`. Il ne faut jamais publier `php/config/`, `php/bin/` ou `php/database.sql` directement. Voir [la procédure d'installation Plesk](php/README_INSTALLATION.md). 
+
 ## Installer ou mettre à jour
 
 Lire d'abord [les instructions d'installation PHP](php/README_INSTALLATION.md), puis [le guide de déploiement et de sécurité](docs/DEPLOIEMENT_SECURISÉ.md).
