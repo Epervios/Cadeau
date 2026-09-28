@@ -22,7 +22,7 @@ Le site doit être redirigé vers HTTPS par l'hébergeur (Nginx/Apache/vhost). E
 
 1. Sauvegarder fichiers et base SQL ; tester la restauration sur une copie isolée.
 2. Déterminer la version réelle de MySQL/MariaDB et PHP. Viser PHP 8.1+.
-3. Exécuter d'abord `php/migrations/001_auth_attempts.sql` sur la copie, puis vérifier les index et contraintes.
+3. Exécuter `php/migrations/001_auth_attempts.sql` puis `php/migrations/002_password_reset.sql` sur la copie avant l'installation du nouveau code, puis vérifier les index et contraintes.
 4. Mettre à jour sur la copie, exécuter `php php/tests/unit.php`, valider PHP lint et les tests HTTP authentification/CSRF et tirages à deux, trois et dix comptes.
 5. Vérifier l'interdiction d'accès des non-approuvés, la persistance du tirage, la réinitialisation et le rejet d'une double création.
 6. Vérifier toutes les URLs sensibles depuis une connexion externe, sans publier une page PHP de diagnostic.
@@ -43,3 +43,9 @@ Le nouvel accueil, l'espace personnel et le tableau organisateur reprennent la m
 Le destinataire est demandé uniquement après l'ouverture explicite de l'enveloppe. Le bouton pour refermer masque et efface le nom du DOM. La navigation est faite au clavier, les grandes cibles tactiles et l'agrandissement du texte sont conservés. Le test HTTP automatisé `php/tests/http-integration.sh` vérifie la chaîne d'inscription, d'approbation, de tirage et de permissions sur une base jetable.
 
 L'envoi de courriels d'invitation ou de récupération de compte n'est **pas implémenté** : il requiert une connexion SMTP opérationnelle et un protocole de validation. Une erreur de réseau n'est jamais assimilée à l'absence de tirage. Vérifier le rendu sur vrais téléphones et avec des utilisateurs âgés avant publication.
+
+## Mot de passe oublié, sans serveur de messagerie
+
+L'organisateur peut créer un lien personnel de 30 minutes valable une seule fois pour chaque participant non administrateur. Le mot de passe nouveau n'est jamais fourni ni choisi par l'organisateur : le participant le saisit sur `public/reset.html`. La nouvelle version invalide toutes les sessions existantes au changement du mot de passe grâce au compteur `users.auth_version`. Après migration, toute ancienne session sans ce compteur enregistré doit se reconnecter. La clé de récupération est transmise dans un fragment d'URL, absent des journaux d'accès HTTP ordinaires (sous réserve des logiciels de messagerie utilisés). Aucun e-mail automatique n'est envoyé.
+
+Appliquer la **migration 002** après sauvegarde avant de remplacer les fichiers PHP. La procédure pour le compte organisateur lui-même reste `php/bin/reset_admin_password.php` en CLI.

@@ -9,6 +9,7 @@ ADMIN="$TEMP/admin.cookies"
 A="$TEMP/alice.cookies"
 B="$TEMP/benoit.cookies"
 C="$TEMP/late.cookies"
+R="$TEMP/reset.cookies"
 YEAR="$(date +%Y)"
 echo "Tests HTTP locaux : inscription, approbation, sécurité CSRF, tirage, confidentialité et réinitialisation."
 
@@ -44,6 +45,7 @@ request "$ADMIN" GET "auth.php?action=me" 200
 request "$ADMIN" GET "user.php?action=assignment" 401
 request "$ADMIN" POST "auth.php?action=login" 200 '{"email":"admin@example.test","password":"local-test-admin-password-only"}'
 [[ "$(jq -r .user.is_admin "$TEMP/response.json")" == true ]]
+ADMIN_ID="$(jq -r .user.id "$TEMP/response.json")"
 request "$ADMIN" POST "admin.php?action=create-draw" 400 "{\"year\":$YEAR}"
 
 # Les attaques CSRF sont rejetées, même sur session administrateur valide.
@@ -69,6 +71,35 @@ request "$ADMIN" GET "admin.php?action=pending-users" 200
 [[ "$(jq length "$TEMP/response.json")" == 0 ]]
 request "$A" GET "user.php?action=assignment" 200
 [[ "$(jq -r .has_draw "$TEMP/response.json")" == false ]]
+
+# La récupération familiale ne doit pas permettre l'usurpation ni exposer les secrets.
+request "$A" POST "admin.php?action=create-password-reset" 403 "{\"user_id\":$ALICE_ID}"
+request "$ADMIN" POST "admin.php?action=create-password-reset" 404 "{\"user_id\":$ADMIN_ID}"
+request "$ADMIN" POST "admin.php?action=create-password-reset" 200 "{\"user_id\":$ALICE_ID}"
+FIRST_TOKEN="$(jq -r .token "$TEMP/response.json")"
+[[ "$FIRST_TOKEN" =~ ^[a-f0-9]{64}$ ]]
+[[ "$(jq -r .expires_in_seconds "$TEMP/response.json")" == 1800 ]]
+# Un nouveau lien invalide le précédent.
+request "$ADMIN" POST "admin.php?action=create-password-reset" 200 "{\"user_id\":$ALICE_ID}"
+SECOND_TOKEN="$(jq -r .token "$TEMP/response.json")"
+[[ "$FIRST_TOKEN" != "$SECOND_TOKEN" ]]
+STORED_HASH="$(mariadb -N -h 127.0.0.1 -u root cadeau_test -e "SELECT token_hash FROM password_reset_tokens WHERE user_id=$ALICE_ID")"
+[[ "$STORED_HASH" != "$FIRST_TOKEN" && "$STORED_HASH" != "$SECOND_TOKEN" ]]
+request "$R" POST "auth.php?action=reset-password" 400 "{\"token\":\"$FIRST_TOKEN\",\"password\":\"recovered-password-alice\"}"
+request "$R" POST "auth.php?action=reset-password" 400 "{\"token\":\"$SECOND_TOKEN\",\"password\":\"court\"}"
+request "$R" POST "auth.php?action=reset-password" 200 "{\"token\":\"$SECOND_TOKEN\",\"password\":\"recovered-password-alice\"}"
+# L'ancien appareil est déconnecté, même si sa session HTTP n'a pas expiré.
+request "$A" GET "user.php?action=assignment" 401
+request "$R" POST "auth.php?action=reset-password" 400 "{\"token\":\"$SECOND_TOKEN\",\"password\":\"another-password-alice\"}"
+request "$A" POST "auth.php?action=login" 401 '{"email":"alice@example.test","password":"long-test-password-alice"}'
+request "$A" POST "auth.php?action=login" 200 '{"email":"alice@example.test","password":"recovered-password-alice"}'
+request "$A" GET "user.php?action=assignment" 200
+[[ "$(jq -r .has_draw "$TEMP/response.json")" == false ]]
+# L'expiration du lien ne modifie jamais le mot de passe en base.
+request "$ADMIN" POST "admin.php?action=create-password-reset" 200 "{\"user_id\":$BENOIT_ID}"
+EXPIRED_TOKEN="$(jq -r .token "$TEMP/response.json")"
+mariadb -h 127.0.0.1 -u root cadeau_test -e "UPDATE password_reset_tokens SET expires_at=1 WHERE user_id=$BENOIT_ID"
+request "$R" POST "auth.php?action=reset-password" 400 "{\"token\":\"$EXPIRED_TOKEN\",\"password\":\"another-password-benoit\"}"
 
 request "$ADMIN" POST "admin.php?action=create-draw" 200 "{\"year\":$YEAR}"
 [[ "$(jq -r .participants "$TEMP/response.json")" == 3 ]]

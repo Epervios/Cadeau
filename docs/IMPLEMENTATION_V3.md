@@ -34,3 +34,13 @@ Le workflow `.github/workflows/php-check.yml` exécute analyse syntaxique PHP/JS
 7. Contrôler un vrai hébergement avec HTTPS, sauvegarde/restauration, secret de base de données remplacé et restrictions d'accès Apache avant fusion.
 
 **Ne pas fusionner automatiquement sur `main` ni publier en production** sans sauvegarde restaurable et rotation des secrets historiques exposés.
+
+## Récupération de mot de passe familiale (implémentée)
+
+Depuis `Organiser → Participants`, l'organisateur sélectionne **Aider à retrouver son mot de passe** pour un participant non administrateur. Après confirmation, le serveur crée un jeton de 256 bits ; **seul son SHA-256 est conservé en base**. Le lien est transmis par un message privé, en personne ou sur l'appareil du parent ; aucun serveur SMTP n'est requis. Il dure 30 minutes, chaque nouveau lien révoque le précédent, et la validation de ce lien supprime le jeton et invalide les anciennes sessions du participant.
+
+La personne voit une page très lisible et choisit elle-même un nouveau mot de passe (12 caractères minimum), puis revient à la connexion. Le nom du destinataire n'apparaît ni dans ce lien ni dans la page de récupération. Le jeton est placé dans le **fragment** de l'URL, non transmis lors de la requête HTTP initiale et immédiatement effacé de la barre d'adresse au chargement. Cette mesure ne protège pas contre un message partagé au mauvais destinataire : vérifiez personnellement à qui vous l'envoyez.
+
+Si l'organisateur perd son propre mot de passe, utiliser `php/bin/reset_admin_password.php` **uniquement depuis un terminal privé** sur une base disposant de la migration `002_password_reset.sql`.
+
+La migration `002_password_reset.sql` ajoute la colonne `users.auth_version` et la table `password_reset_tokens` ; **obligatoire avant tout déploiement de cette fonctionnalité** sur une base existante. Les sessions ouvertes avant la migration devront se reconnecter.

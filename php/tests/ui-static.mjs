@@ -18,7 +18,7 @@ assert.match(common,/credentials:"same-origin"/,"API restreinte à l'origine");
 assert.match(common,/X-CSRF-Token/,"Protection des mutations activée");
 
 for(const [htmlFile,jsFile] of [
-  ["index.html","app.js"],["user.html","user.js"],["admin.html","admin.js"]
+  ["index.html","app.js"],["user.html","user.js"],["admin.html","admin.js"],["reset.html","reset.js"]
 ]){
   const html=file(htmlFile),js=file("js/"+jsFile);
   assert.match(html,/<html lang="fr">/,"Langue française de "+htmlFile);
@@ -39,4 +39,11 @@ const personal=file("user.html"),userJs=file("js/user.js");
 assert.doesNotMatch(personal,/Camille|Benoit|Alice/,"Aucun destinataire fictif dans la page réelle");
 assert.ok(userJs.indexOf('apiRequest("/user.php?action=assignment")') >
   userJs.indexOf('open.addEventListener("click"'),"Attribution récupérée seulement après clic");
-console.log("PASS : trois pages cohérentes, accessibles structurellement et sans destinataire préchargé.");
+const resetHtml=file("reset.html"),resetJs=file("js/reset.js");
+assert.match(resetHtml,/autocomplete="new-password"/,"Mot de passe auto-générable sur appareils");
+assert.match(resetJs,/history\.replaceState/,"Le fragment n'est pas conservé dans la barre d'adresse");
+assert.match(resetJs,/action=reset-password/,"Le formulaire est relié à l'API");
+assert.match(file("admin.html"),/id="helpDialog"/,"Assistance administrateur disponible");
+assert.match(file("js/admin.js"),/reset\.html#token=/,"Le jeton n'est pas dans l'URL transmise à Apache");
+assert.match(file("index.html"),/J'ai oublié mon mot de passe/,"Aide accessible depuis la connexion");
+console.log("PASS : quatre pages cohérentes, récupération assistée et aucun destinataire préchargé.");
