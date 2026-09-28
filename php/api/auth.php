@@ -44,6 +44,48 @@ if ($action === 'register') {
     }
 }
 
+if ($action === 'reset-password') {
+    $rawToken = $input['token'] ?? null;
+    $password = $input['password'] ?? null;
+    if (!is_string($rawToken) || !preg_match('/\\A[a-f0-9]{64}\\z/D', $rawToken) ||
+        !is_string($password) || strlen($password) < 12 || strlen($password) > 1024) {
+        jsonError('Le lien ou le nouveau mot de passe est invalide.', 400);
+    }
+    $hash = hash('sha256', hex2bin($rawToken));
+    $pdo = getDBConnection();
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare(
+            'SELECT user_id, expires_at FROM password_reset_tokens WHERE token_hash = ? FOR UPDATE'
+        );
+        $stmt->execute([$hash]);
+        $reset = $stmt->fetch();
+        if (!$reset || (int)$reset['expires_at'] < time()) {
+            $pdo->rollBack();
+            jsonError('Ce lien est invalide, a expiré ou a déjà été utilisé. Demandez-en un autre à l’organisateur.', 400);
+        }
+        $stmt = $pdo->prepare(
+            'UPDATE users SET password_hash = ?, auth_version = auth_version + 1 WHERE id = ? AND is_admin = 0'
+        );
+        $stmt->execute([hashPassword($password), $reset['user_id']]);
+        if ($stmt->rowCount() !== 1) {
+            $pdo->rollBack();
+            jsonError('Ce lien est invalide ou ne peut plus être utilisé.', 400);
+        }
+        // Jeton à usage unique : suppression dans la même transaction que le changement.
+        $pdo->prepare('DELETE FROM password_reset_tokens WHERE user_id = ?')
+            ->execute([$reset['user_id']]);
+        $pdo->commit();
+        $_SESSION = [];
+        session_regenerate_id(true);
+        jsonResponse(['message' => 'Votre mot de passe a été changé. Vous pouvez vous connecter.']);
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('Remise à zéro du mot de passe indisponible : ' . $e->getCode());
+        jsonError('La réinitialisation est momentanément indisponible.', 500);
+    }
+}
+
 if ($action === 'login') {
     $email = strtolower(trim((string)($input['email'] ?? '')));
     $password = (string)($input['password'] ?? '');
@@ -62,6 +104,7 @@ if ($action === 'login') {
     clearLoginAttempts($pdo, $email, $ip);
     session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'];
+    $_SESSION['auth_version'] = (int)$user['auth_version'];
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     jsonResponse([
         'message' => 'Connexion réussie',

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    auth_version INT UNSIGNED NOT NULL DEFAULT 0,
     is_admin TINYINT(1) DEFAULT 0,
     is_approved TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -54,4 +55,16 @@ CREATE TABLE IF NOT EXISTS auth_attempts (
     blocked_until BIGINT UNSIGNED NOT NULL DEFAULT 0,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_auth_attempts_updated (updated_at)
+) ENGINE=InnoDB;
+
+-- Récupération assistée par l'organisateur, sans serveur SMTP.
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    user_id INT NOT NULL PRIMARY KEY,
+    token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    expires_at BIGINT UNSIGNED NOT NULL,
+    issued_by INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_password_reset_token (token_hash),
+    CONSTRAINT fk_reset_target FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_reset_issuer FOREIGN KEY (issued_by) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;

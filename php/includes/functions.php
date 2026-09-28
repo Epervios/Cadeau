@@ -27,7 +27,10 @@ function getCurrentUserId() {
 function getSessionUser() {
     if (!isset($_SESSION['user_id'])) return null;
     $user = getUserById($_SESSION['user_id']);
-    if (!$user) {
+    // Une remise à zéro du mot de passe invalide toutes les anciennes sessions,
+    // y compris celles qui n'ont pas encore été fermées sur d'autres appareils.
+    if (!$user || !isset($_SESSION['auth_version']) ||
+        (int)$_SESSION['auth_version'] !== (int)$user['auth_version']) {
         $_SESSION = [];
         session_regenerate_id(true);
         return null;
@@ -113,7 +116,7 @@ function getUserByEmail($email) {
 // Obtenir un utilisateur par ID
 function getUserById($id) {
     $pdo = getDBConnection();
-    $stmt = $pdo->prepare("SELECT id, first_name, email, is_admin, is_approved, created_at FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, first_name, email, is_admin, is_approved, auth_version, created_at FROM users WHERE id = ?");
     $stmt->execute([$id]);
     return $stmt->fetch();
 }

@@ -18,6 +18,48 @@ if ($method === 'GET') {
 if ($method !== 'POST') jsonError('Méthode non autorisée', 405);
 requireCsrf();
 
+if ($action === 'create-password-reset') {
+    $input = getJsonInput();
+    $id = filter_var($input['user_id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id || $id < 1) jsonError('Participant invalide.', 400);
+    // Ne jamais écrire ni journaliser le jeton brut.
+    $token = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', hex2bin($token));
+    $expiresAt = time() + 1800;
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare(
+            'SELECT id, first_name FROM users WHERE id = ? AND is_admin = 0 FOR UPDATE'
+        );
+        $stmt->execute([$id]);
+        $person = $stmt->fetch();
+        if (!$person) {
+            $pdo->rollBack();
+            jsonError('Participant introuvable. Pour un compte organisateur, utiliser la procédure CLI.', 404);
+        }
+        // Un seul jeton valable par participant : chaque nouveau lien révoque le précédent.
+        $stmt = $pdo->prepare(
+            'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, issued_by)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash),
+                                     expires_at = VALUES(expires_at),
+                                     issued_by = VALUES(issued_by)'
+        );
+        $stmt->execute([$id, $tokenHash, $expiresAt, getCurrentUserId()]);
+        $pdo->commit();
+        jsonResponse([
+            'message' => 'Lien de réinitialisation créé.',
+            'token' => $token,
+            'expires_in_seconds' => 1800,
+            'first_name' => $person['first_name']
+        ]);
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('Création d’un lien de réinitialisation indisponible : ' . $e->getCode());
+        jsonError('Impossible de préparer ce lien actuellement.', 500);
+    }
+}
+
 if ($action === 'approve-user' || $action === 'reject-user') {
     $id = filter_var($_GET['user_id'] ?? null, FILTER_VALIDATE_INT);
     if (!$id || $id < 1) jsonError('Participant invalide', 400);
